@@ -89,7 +89,7 @@ There is deliberately no Terraform ([ADR-001](docs/adr/ADR-001-vercel-neon-stack
 This runbook plus `vercel.json` and `.env.example` are the configuration
 record — keep all three current when anything here changes.
 
-1. **Vercel project** — import `App-Artery/asset-mgt` into the Vercel team
+1. **Vercel project** — import `kelvinmwega/asset-mgt` into the Vercel team
    (Hobby; ToS risk accepted, ADR-001). Framework preset: Next.js. Production
    branch: `main` (previews per PR are automatic). Function region `fra1` is
    pinned by `vercel.json`.
@@ -113,7 +113,7 @@ record — keep all three current when anything here changes.
    `scripts/migrate-if-production.sh` is only defence in depth. All except
    `MIGRATE_DATABASE_URL` are enumerated with placeholders in
    [.env.example](.env.example)
-   ([#33](https://github.com/App-Artery/asset-mgt/issues/33) adds it) — real
+   ([#33](https://github.com/kelvinmwega/asset-mgt/issues/33) adds it) — real
    secrets live only in Vercel env vars and gitignored `.env`.
 
    This line said "(Production + Preview)" until 2026-08-07, describing an
@@ -129,7 +129,7 @@ record — keep all three current when anything here changes.
    The Neon integration's `STORAGE_*` variables _are_ scoped Production +
    Preview and do point at the production database. Nothing in this codebase
    reads them, but they are present in every preview build container
-   ([#27](https://github.com/App-Artery/asset-mgt/issues/27)).
+   ([#27](https://github.com/kelvinmwega/asset-mgt/issues/27)).
 
 5. **Migrations** — run `pnpm db:deploy` against the Neon `DATABASE_URL` at
    provisioning. Thereafter the deploy pipeline owns it: a production build
