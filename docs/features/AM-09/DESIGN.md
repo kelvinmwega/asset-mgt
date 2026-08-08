@@ -6,8 +6,8 @@
 - **Mockups:** the AM-09 UI pass artifact — interactive prototypes of every
   surface below, built against the same 402-asset dataset the dev database
   holds.
-- **Deferred out of scope:** [#7](https://github.com/App-Artery/asset-mgt/issues/7)
-  register search, [#8](https://github.com/App-Artery/asset-mgt/issues/8)
+- **Deferred out of scope:** [#7](https://github.com/kelvinmwega/asset-mgt/issues/7)
+  register search, [#8](https://github.com/kelvinmwega/asset-mgt/issues/8)
   pagination.
 
 ---
