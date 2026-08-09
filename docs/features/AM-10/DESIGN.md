@@ -346,6 +346,21 @@ makes G2 testable.
       control asserting the visible text _does_ differ across those combinations
       (without it the guard would pass against a component that ignored the zone
       entirely).
+- [x] **B1 (review) — a missing zone can never become the ambient one.**
+      `exactTimestamp` applies the UTC fallback itself; undefined, null and `""`
+      all render `UTC` even under a poisoned ambient `TZ`. Red: removed
+      `|| "UTC"` — **failed** with `2026-08-01 21:21 GMT+0`.
+      `Intl` treats `{ timeZone: undefined }` as _absent_, not invalid, and
+      falls through to the machine's zone. The guard had lived only at the call
+      sites, so a single forgetful caller reintroduced it silently. **The
+      fallback is a property of the formatter, not a convention among callers.**
+- [x] **B2 (review) — the SSR assertions do not grade their own homework.**
+      `admin/users/page.integration.test.tsx` built its expected value by
+      calling the code under test, so both sides agreed whatever that code did —
+      demonstrated when a formatter regression failed the literal-string files
+      and left this one green. It now uses an independent oracle, which must not
+      be refactored to share code with `exactTimestamp`. Red: broke the UTC
+      label — **failed** 4 tests, where the old form passed.
 - **G7 — withdrawn with the storage change.** It guarded the migration; there
   is no migration. Re-instate it with the deferred story (§8).
 
