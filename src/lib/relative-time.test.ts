@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { withTimeZone } from "../../test/time-zone";
+import { pinTimeZone, withTimeZone } from "../../test/time-zone";
 import { exactTimestamp, relativeTime } from "./relative-time";
 
 const now = new Date("2026-08-02T12:00:00.000Z");
@@ -212,6 +212,36 @@ describe("exactTimestamp", () => {
     ]) {
       const label = exactTimestamp(INSTANT, zone).split(" ").at(-1);
       expect(label).toMatch(/^GMT[+-]\d{1,2}(:\d{2})?$/);
+    }
+  });
+
+  /**
+   * Review finding B1. A missing zone can NEVER silently become the ambient one.
+   *
+   * `Intl` does not reject `{ timeZone: undefined }` — it treats the option as
+   * absent and falls through to the machine's zone. Combined with a poisoned
+   * ambient `TZ` (the `"undefined"` string this suite's own helper exists to
+   * prevent, see `test/time-zone.ts`) that renders `GMT+0`: a value that looks
+   * deliberate, is not, and differs from the `UTC` every SSR assertion expects.
+   *
+   * Both halves are reproduced here rather than described. The zone is forced
+   * through the argument, so this holds whatever the caller does — the `??
+   * "UTC"` at the call sites is now a second line of defence, not the only one.
+   *
+   * Red-proven by removing the `|| "UTC"` from `exactTimestamp`.
+   */
+  it("falls back to UTC for a missing zone, even under a poisoned ambient TZ", () => {
+    const restore = pinTimeZone("undefined"); // exactly the poisoned state
+    try {
+      expect(Intl.DateTimeFormat().resolvedOptions().timeZone).toBeUndefined();
+
+      for (const missing of [undefined, null, ""]) {
+        expect(exactTimestamp(INSTANT, missing as unknown as string)).toBe(
+          "2026-08-01 21:21 UTC",
+        );
+      }
+    } finally {
+      restore();
     }
   });
 

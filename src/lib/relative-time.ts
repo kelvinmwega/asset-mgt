@@ -116,7 +116,20 @@ function formatterFor(timeZone: string): Intl.DateTimeFormat {
  * column, which `01/08/2026` is not.
  */
 export function exactTimestamp(value: Date, timeZone: string): string {
-  const parts = formatterFor(timeZone).formatToParts(value);
+  // The UTC fallback belongs HERE, not only at the call sites (review B1).
+  //
+  // `Intl` does not treat `{ timeZone: undefined }` as an error — it treats the
+  // option as absent and silently falls through to the AMBIENT zone. So a
+  // single call site that forgets `?? "UTC"`, or a `string` parameter that is
+  // undefined at runtime despite the type, renders the machine's zone while
+  // claiming to be the UTC fallback. Under a poisoned ambient zone that
+  // surfaces as `GMT+0`, which reads like a deliberate value and is not one.
+  //
+  // Empty string and null take the same path. An unrecognised NON-empty zone is
+  // deliberately left to throw: that is a programming error, and in an audit
+  // register a loud failure beats a plausible-looking wrong time.
+  const requested = timeZone || "UTC";
+  const parts = formatterFor(requested).formatToParts(value);
   const part = (type: Intl.DateTimeFormatPartTypes): string =>
     parts.find((candidate) => candidate.type === type)?.value ?? "";
 
@@ -128,7 +141,7 @@ export function exactTimestamp(value: Date, timeZone: string): string {
   // Keyed on the requested zone, NOT on the resulting `GMT+0` string: a viewer
   // in Africa/Abidjan is also at +0 today, and labelling their clock `UTC`
   // would state something that stops being true the moment any such zone shifts.
-  const zone = timeZone === "UTC" ? "UTC" : part("timeZoneName");
+  const zone = requested === "UTC" ? "UTC" : part("timeZoneName");
 
   return `${part("year")}-${part("month")}-${part("day")} ${part("hour")}:${part("minute")} ${zone}`;
 }
