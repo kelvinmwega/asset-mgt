@@ -317,11 +317,16 @@ makes G2 testable.
       `value.toISOString()` in both variants under a non-UTC viewer zone. Red:
       pointed `dateTime` at the localised string — `timestamp.test.tsx`
       "always carries a UTC machine-readable dateTime" **failed**.
-- [x] **G4 — the server render is UTC and says so.** The 14 existing
-      integration assertions on `"… UTC"` in server-rendered HTML pass
-      **unchanged**. Red: resolved the zone in a `useState` initialiser rather
-      than an effect — "falls back to UTC where the viewer's zone is not yet
-      known" **failed**, the markup leaking `GMT+3`.
+- [x] **G4 — the server render is UTC and says so.** The pre-existing
+      assertions pass **unchanged**. Red: resolved the zone in a `useState`
+      initialiser rather than an effect — "falls back to UTC where the viewer's
+      zone is not yet known" **failed**, the markup leaking `GMT+3`.
+      **Counted, not estimated** (an earlier revision said "14", which was a
+      file count from an orientation grep, not an assertion count): **4 literal
+      `… UTC` assertions** — `me/assignments:183`, `people/[id]:257`, and two in
+      `assignment-card-list.test.tsx` — plus **6 in `admin/users`**, which since
+      review B2 build their expected value from an independent oracle rather
+      than from the code under test.
 - [x] **G5 — the zone is always named.** The same instant formatted in three
       zones yields three different strings, each ending in a non-empty zone
       token. Red: dropped `timeZoneName` — 4 tests **failed**, the value

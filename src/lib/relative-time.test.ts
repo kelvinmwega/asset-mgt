@@ -129,7 +129,10 @@ describe("exactTimestamp", () => {
    * screens could not tell a timezone difference from a data difference. The
    * other half is the UTC ISO in `<time dateTime>` (see timestamp.test.tsx).
    *
-   * Red-proven by deleting `timeZoneName: "short"` from the formatter.
+   * Red-proven by deleting `timeZoneName: "shortOffset"` from the formatter.
+   * (Said `"short"` until C1 changed the option — a stale reference caught at
+   * review, and worth correcting rather than leaving: a red-proof note naming a
+   * line that no longer exists cannot be re-run by the next person.)
    */
   it("always names the zone, and different zones read differently", () => {
     const rendered = ["UTC", "Africa/Nairobi", "America/New_York"].map((zone) =>
