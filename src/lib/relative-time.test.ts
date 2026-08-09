@@ -64,23 +64,42 @@ describe("relativeTime", () => {
   });
 
   /**
-   * G6 (DESIGN §7). AM-10 localised the exact timestamp and deliberately left
-   * this alone: elapsed time between two instants is the same number of
-   * milliseconds in every zone. Its "yesterday" is an elapsed-hours bucket, not
-   * a calendar-day computation, so there is no correct zone to give it — and a
-   * `timeZone` parameter added here would be a silent invitation to make it
-   * one.
+   * G6 (DESIGN §7, upgraded per advisor C3). AM-10 localised the exact
+   * timestamp and deliberately left this alone: elapsed time between two
+   * instants is the same number of milliseconds in every zone.
+   *
+   * **This guards a property, not an absence** — an earlier version of this
+   * test compared two zones on a value three days old, which no realistic
+   * mutant fails, and it was wrongly recorded as un-red-provable. The mutant
+   * worth defending against is a future "make `yesterday` mean calendar
+   * yesterday" refactor, i.e. local calendar-day arithmetic instead of elapsed
+   * milliseconds.
+   *
+   * The fixture is what makes it bite: three hours before `now`, positioned so
+   * it straddles local midnight in Nairobi and does not in Los Angeles.
+   *
+   *   value 20:00Z, now 23:00Z
+   *   Nairobi (+3):     23:00 -> 02:00 next day   local day delta 1
+   *   Los Angeles (-7): 13:00 -> 16:00 same day   local day delta 0
+   *
+   * A calendar-day implementation therefore says "yesterday" in Nairobi and
+   * "3 hours ago" in Los Angeles. Red-proven by making `relativeTime` compare
+   * local calendar days: the Nairobi assertion fails.
    */
-  it("is zone-independent", () => {
-    const east = withTimeZone("Pacific/Kiritimati", () =>
-      relativeTime(ago(3 * DAY), now),
-    ); // UTC+14
-    const west = withTimeZone("Pacific/Midway", () =>
-      relativeTime(ago(3 * DAY), now),
-    ); // UTC-11
+  it("is zone-independent, even across a local midnight", () => {
+    const straddleNow = new Date("2026-06-21T23:00:00.000Z");
+    const threeHoursBefore = new Date("2026-06-21T20:00:00.000Z");
 
-    expect(west).toBe(east);
-    expect(east).toBe("3 days ago");
+    const nairobi = withTimeZone("Africa/Nairobi", () =>
+      relativeTime(threeHoursBefore, straddleNow),
+    );
+    const losAngeles = withTimeZone("America/Los_Angeles", () =>
+      relativeTime(threeHoursBefore, straddleNow),
+    );
+
+    expect(nairobi).toBe("3 hours ago");
+    expect(losAngeles).toBe("3 hours ago");
+    expect(nairobi).toBe(losAngeles);
   });
 });
 
@@ -142,6 +161,64 @@ describe("exactTimestamp", () => {
         "2026-08-01 21:21 UTC",
       );
     }
+  });
+
+  /**
+   * C2 (advisor). The offset is computed per instant, not once per zone.
+   *
+   * The browser check could not have caught this: Nairobi has no DST, so an
+   * offset hoisted out of the per-row formatter and reused for every row would
+   * have looked perfect there and been wrong for half the year anywhere that
+   * observes it. New York in January and July is the discriminating pair.
+   *
+   * Red-proven by computing the offset once from a fixed date and reusing it
+   * for every value — a mutation rather than a deletion, because what is being
+   * guarded is that `Intl` is consulted per value at all.
+   */
+  it("applies the offset per instant, so DST is honoured", () => {
+    const winter = exactTimestamp(
+      new Date("2026-01-15T12:00:00Z"),
+      "America/New_York",
+    );
+    const summer = exactTimestamp(
+      new Date("2026-07-15T12:00:00Z"),
+      "America/New_York",
+    );
+
+    expect(winter).toBe("2026-01-15 07:00 GMT-5");
+    expect(summer).toBe("2026-07-15 08:00 GMT-4");
+  });
+
+  /**
+   * C1 (advisor). The zone label is an OFFSET, never a locale-dependent
+   * abbreviation.
+   *
+   * `short` returns `CST` for America/Chicago under en-US — a string that is
+   * simultaneously China Standard Time (+8), US Central (-6) and Cuba. It
+   * happens to return `GMT-6` under the en-GB this app pins, so the bug is
+   * latent rather than absent, and "display in the user's timezone" is exactly
+   * the change that invites someone to reach for the viewer's locale too.
+   *
+   * Red-proven by switching the formatter to `short`: under en-US this test
+   * fails. It is asserted structurally rather than against a literal so it
+   * keeps holding as CLDR data changes.
+   */
+  it("labels every zone with an unambiguous offset", () => {
+    for (const zone of [
+      "America/Chicago",
+      "America/New_York",
+      "Asia/Shanghai",
+      "Africa/Nairobi",
+    ]) {
+      const label = exactTimestamp(INSTANT, zone).split(" ").at(-1);
+      expect(label).toMatch(/^GMT[+-]\d{1,2}(:\d{2})?$/);
+    }
+  });
+
+  it("names the UTC fallback UTC, not GMT+0", () => {
+    // The one deliberate exception to the offset rule, and the reason the four
+    // pre-existing SSR assertions still pass unchanged (advisor C7).
+    expect(exactTimestamp(INSTANT, "UTC")).toBe("2026-08-01 21:21 UTC");
   });
 
   it("renders midnight as 00:xx, never 24:xx", () => {

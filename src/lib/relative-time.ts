@@ -74,7 +74,16 @@ function formatterFor(timeZone: string): Intl.DateTimeFormat {
       // en-GB today; only one says so.
       hourCycle: "h23",
       // The zone is NEVER omitted — see the docblock on exactTimestamp.
-      timeZoneName: "short",
+      //
+      // `shortOffset`, not `short` (advisor condition C1). `short` returns a
+      // LOCALE-dependent abbreviation, and the ambiguous ones are real: under
+      // en-US, America/Chicago renders `CST`, which is equally China Standard
+      // Time (+8), US Central (-6) and Cuba. en-GB happens to return `GMT-6`
+      // there today, so pinning the locale hides the problem rather than
+      // solving it — and "adjust to the user" is a standing invitation for
+      // someone to switch this to the viewer's locale later. An offset cannot
+      // be ambiguous in any locale.
+      timeZoneName: "shortOffset",
     });
     FORMATTERS.set(timeZone, formatter);
   }
@@ -111,5 +120,15 @@ export function exactTimestamp(value: Date, timeZone: string): string {
   const part = (type: Intl.DateTimeFormatPartTypes): string =>
     parts.find((candidate) => candidate.type === type)?.value ?? "";
 
-  return `${part("year")}-${part("month")}-${part("day")} ${part("hour")}:${part("minute")} ${part("timeZoneName")}`;
+  // `shortOffset` renders UTC as `GMT+0`, and this one case is worth naming
+  // properly. UTC is the fallback every server, no-JS and first-paint render
+  // uses and the zone the whole audit trail is anchored in, so it reads `UTC` —
+  // which, unlike `CST`, is not an abbreviation anyone has to disambiguate.
+  //
+  // Keyed on the requested zone, NOT on the resulting `GMT+0` string: a viewer
+  // in Africa/Abidjan is also at +0 today, and labelling their clock `UTC`
+  // would state something that stops being true the moment any such zone shifts.
+  const zone = timeZone === "UTC" ? "UTC" : part("timeZoneName");
+
+  return `${part("year")}-${part("month")}-${part("day")} ${part("hour")}:${part("minute")} ${zone}`;
 }

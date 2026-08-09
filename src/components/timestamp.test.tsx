@@ -92,4 +92,47 @@ describe("Timestamp", () => {
       "2026-07-01T09:30:00.000Z",
     );
   });
+
+  /**
+   * C6 (advisor). The same assertion as above, widened to the axes that could
+   * plausibly move it: two zones of OPPOSITE sign, both variants, and both the
+   * server and client renders. The rendered text differs across all four
+   * combinations; `dateTime` must be byte-identical in every one.
+   *
+   * Opposite signs on purpose — the advisor's point that the display and input
+   * hazards break under opposite offsets applies here too, and a pair of
+   * same-sign zones would leave half the space untested.
+   */
+  it("keeps dateTime byte-identical across zones, variants and renderers", () => {
+    const EXPECTED = "2026-07-01T09:30:00.000Z";
+    const rendered = new Set<string>();
+
+    for (const zone of ["Africa/Nairobi", "America/Los_Angeles"]) {
+      const restore = pinTimeZone(zone);
+      try {
+        for (const element of [
+          <Timestamp key="e" value={VALUE} exact />,
+          <Timestamp key="r" value={VALUE} now={NOW} />,
+        ]) {
+          // Server: no effects, so this is the UTC-fallback path.
+          expect(renderToStaticMarkup(element)).toContain(
+            `dateTime="${EXPECTED}"`,
+          );
+
+          // Client: effects run, so this is the viewer-local path.
+          const { container, unmount } = render(element);
+          const time = container.querySelector("time");
+          expect(time).toHaveAttribute("datetime", EXPECTED);
+          rendered.add(time?.textContent ?? "");
+          unmount();
+        }
+      } finally {
+        restore();
+      }
+    }
+
+    // The control: if the text did NOT differ across those combinations, the
+    // assertion above would be proving nothing about zone-independence.
+    expect(rendered.size).toBeGreaterThan(1);
+  });
 });

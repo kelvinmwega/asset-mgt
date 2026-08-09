@@ -86,4 +86,40 @@ describe.skipIf(!testDatabaseUrl)("AssetEvent audit trail (real DB)", () => {
       }),
     ).rejects.toThrow();
   });
+
+  /**
+   * C5 (advisor, AM-10). The connected database's session `TimeZone` is UTC.
+   *
+   * Timestamp columns are `timestamp WITHOUT time zone`, so a session zone that
+   * is not UTC makes `DEFAULT CURRENT_TIMESTAMP` store local wall-clock time,
+   * which Prisma then reads back as an instant offset by that amount. Verified
+   * against this container: under `SET TimeZone='Africa/Nairobi'` a column
+   * default stored a value three hours in the future.
+   *
+   * **What this catches and what it does not**, stated because the difference
+   * is the whole value of the test:
+   *
+   * - **Catches:** configuration drift — a server, container or connection
+   *   string that comes up in a non-UTC zone.
+   * - **Does NOT catch:** a deliberate `SET TimeZone` inside another session.
+   *   A GUI client such as DataGrip or TablePlus commonly sets the session zone
+   *   to the operator's local one, and on a register with no delete path and no
+   *   correction UI, manual intervention is the documented escape hatch rather
+   *   than an exotic event.
+   * - **Does NOT cover production.** This asserts against the TEST database. The
+   *   equivalent runtime assertion belongs with the deferred `timestamptz`
+   *   story (DESIGN §8) — and per LEARNINGS §Next.js, a runtime check is the
+   *   only kind that survives every deploy verb anyway.
+   *
+   * Making the columns `timestamptz` is what removes the dependency entirely;
+   * until then this is the cheap canary.
+   */
+  it("connects with the session TimeZone set to UTC", async () => {
+    const [{ timezone }] = await db.$queryRaw<
+      { timezone: string }[]
+    >`SELECT current_setting('TimeZone') AS timezone`;
+
+    // Postgres reports UTC as `UTC` or `Etc/UTC` depending on how it was set.
+    expect(timezone).toMatch(/^(Etc\/)?UTC$/);
+  });
 });
