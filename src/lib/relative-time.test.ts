@@ -61,13 +61,97 @@ describe("relativeTime", () => {
       relativeTime(ago(50 * MINUTE), now),
     );
   });
+
+  /**
+   * G6 (DESIGN §7). AM-10 localised the exact timestamp and deliberately left
+   * this alone: elapsed time between two instants is the same number of
+   * milliseconds in every zone. Its "yesterday" is an elapsed-hours bucket, not
+   * a calendar-day computation, so there is no correct zone to give it — and a
+   * `timeZone` parameter added here would be a silent invitation to make it
+   * one.
+   */
+  it("is zone-independent", () => {
+    const original = process.env.TZ;
+    try {
+      process.env.TZ = "Pacific/Kiritimati"; // UTC+14
+      const east = relativeTime(ago(3 * DAY), now);
+      process.env.TZ = "Pacific/Midway"; // UTC-11
+      expect(relativeTime(ago(3 * DAY), now)).toBe(east);
+      expect(east).toBe("3 days ago");
+    } finally {
+      process.env.TZ = original;
+    }
+  });
 });
 
 describe("exactTimestamp", () => {
-  it("is UTC and locale-independent", () => {
-    // An audit trail that renders differently per viewer is not an audit trail.
-    expect(exactTimestamp(new Date("2026-08-01T21:21:33.500Z"))).toBe(
-      "2026-08-01 21:21 UTC",
+  // 21:21 UTC is 00:21 the NEXT DAY in Nairobi — the date rolls, not just the
+  // clock. A formatter that sliced the ISO string and swapped the label would
+  // pass a same-day fixture and fail this one.
+  const INSTANT = new Date("2026-08-01T21:21:33.500Z");
+
+  it("formats in the zone it is given, rolling the date where it must", () => {
+    expect(exactTimestamp(INSTANT, "UTC")).toBe("2026-08-01 21:21 UTC");
+    expect(exactTimestamp(INSTANT, "Africa/Nairobi")).toBe(
+      "2026-08-02 00:21 GMT+3",
     );
+    expect(exactTimestamp(INSTANT, "America/New_York")).toBe(
+      "2026-08-01 17:21 GMT-4",
+    );
+  });
+
+  /**
+   * G5 (DESIGN §7). The zone is never omitted.
+   *
+   * AM-09 rendered every viewer the same UTC string, on the reasoning that an
+   * audit trail rendering differently per viewer is not one. AM-10 renders per
+   * viewer, and this is half of what replaces that guarantee: a screenshot that
+   * does not name its own clock cannot be reconciled, and two admins comparing
+   * screens could not tell a timezone difference from a data difference. The
+   * other half is the UTC ISO in `<time dateTime>` (see timestamp.test.tsx).
+   *
+   * Red-proven by deleting `timeZoneName: "short"` from the formatter.
+   */
+  it("always names the zone, and different zones read differently", () => {
+    const rendered = ["UTC", "Africa/Nairobi", "America/New_York"].map((zone) =>
+      exactTimestamp(INSTANT, zone),
+    );
+
+    for (const value of rendered) {
+      // A trailing zone token, always: "… 21:21 UTC", never a bare "… 21:21".
+      expect(value).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} \S+$/);
+    }
+    expect(new Set(rendered).size).toBe(rendered.length);
+  });
+
+  /**
+   * The zone comes from the argument and NOWHERE else.
+   *
+   * This is the guard CI cannot fake. GitHub Actions runners have no `TZ` set,
+   * so they run in UTC, where an accidental ambient
+   * `resolvedOptions().timeZone` read is indistinguishable from a correct
+   * explicit one — the test would pass in CI forever while being wrong on every
+   * developer machine and in every browser. Pinning the process zone to
+   * something far from both UTC and Nairobi is what makes the assertion mean
+   * anything.
+   */
+  it("ignores the ambient process timezone", () => {
+    const original = process.env.TZ;
+    try {
+      process.env.TZ = "Pacific/Kiritimati"; // UTC+14
+      expect(exactTimestamp(INSTANT, "UTC")).toBe("2026-08-01 21:21 UTC");
+      process.env.TZ = "Pacific/Midway"; // UTC-11
+      expect(exactTimestamp(INSTANT, "UTC")).toBe("2026-08-01 21:21 UTC");
+    } finally {
+      process.env.TZ = original;
+    }
+  });
+
+  it("renders midnight as 00:xx, never 24:xx", () => {
+    // `hour12: false` renders midnight as "24:00" under some locale/engine
+    // pairs; `hourCycle: "h23"` is why this holds.
+    expect(
+      exactTimestamp(new Date("2026-08-01T21:00:00Z"), "Africa/Nairobi"),
+    ).toBe("2026-08-02 00:00 GMT+3");
   });
 });

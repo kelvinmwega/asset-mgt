@@ -53,10 +53,63 @@ export function relativeTime(value: Date, now: Date): string {
 }
 
 /**
- * The exact value, for the `title` and for anything reconciling against another
- * system. UTC and ISO-shaped on purpose: the server's locale is not the
- * reader's, and an audit trail that renders differently per viewer is not one.
+ * `Intl.DateTimeFormat` construction is the expensive part, and this is called
+ * once per row on a page that renders every asset. One formatter per zone, and
+ * in practice the map holds one entry: the viewer's.
  */
-export function exactTimestamp(value: Date): string {
-  return `${value.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+const FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+
+function formatterFor(timeZone: string): Intl.DateTimeFormat {
+  let formatter = FORMATTERS.get(timeZone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      // `hourCycle` rather than `hour12: false`, which is the form that renders
+      // midnight as "24:00" under some locale/engine pairs. Both are correct in
+      // en-GB today; only one says so.
+      hourCycle: "h23",
+      // The zone is NEVER omitted — see the docblock on exactTimestamp.
+      timeZoneName: "short",
+    });
+    FORMATTERS.set(timeZone, formatter);
+  }
+  return formatter;
+}
+
+/**
+ * The exact value, for the `title` and for anything reconciling against another
+ * system.
+ *
+ * AM-09 rendered this in UTC for every viewer, reasoning that an audit trail
+ * which renders differently per viewer is not one. AM-10 reverses that: staff
+ * are in UTC+3, so every reader was doing the arithmetic by hand. **The audit
+ * property is kept by two things instead, and neither is optional.**
+ *
+ * 1. **The zone is always in the visible text** — `2026-08-01 21:21 GMT+3`,
+ *    never a bare `21:21`. A screenshot that does not name its own clock cannot
+ *    be reconciled against another system, and two admins comparing screens
+ *    could not tell a timezone difference from a data difference.
+ * 2. **`<time dateTime>` stays UTC ISO-8601** (see src/components/timestamp.tsx).
+ *    That attribute, not this string, is the machine-readable anchor.
+ *
+ * `timeZone` is a required parameter rather than an ambient
+ * `resolvedOptions().timeZone` read, for the same reason `relativeTime` takes
+ * `now`: a function that reads its environment cannot be tested without
+ * mutating that environment, and CI runs in UTC, where an ambient read is
+ * indistinguishable from a correct one.
+ *
+ * Shape is `YYYY-MM-DD HH:mm ZONE` — sortable and scannable down a table
+ * column, which `01/08/2026` is not.
+ */
+export function exactTimestamp(value: Date, timeZone: string): string {
+  const parts = formatterFor(timeZone).formatToParts(value);
+  const part = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((candidate) => candidate.type === type)?.value ?? "";
+
+  return `${part("year")}-${part("month")}-${part("day")} ${part("hour")}:${part("minute")} ${part("timeZoneName")}`;
 }
