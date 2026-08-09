@@ -362,8 +362,9 @@ jsdom proves markup, never behaviour, and two claims above are behavioural.
 Checked signed-in against local Postgres, Chromium in `Europe/London`:
 
 - The swap happens and is **DST-correct on the same page** — a July event reads
-  `2026-07-31 23:08 BST`, a December one `2025-12-08 22:08 GMT`. A fixed offset
-  would have got the second wrong.
+  `2026-07-31 23:08 GMT+1`, a December one `2025-12-08 22:08 GMT+0`. An offset
+  computed once and reused would have got the second wrong. (Re-run after C1
+  changed the label form; the pre-C1 run read `BST` and `GMT` on the same rows.)
 - `dateTime` stayed `2026-07-31T22:08:42.369Z`; the purchase and warranty dates
   stayed `31 Jul 2026` / `14 Jan 2026`.
 - **Zero console errors and zero warnings**, which is the actual test of the
