@@ -32,6 +32,7 @@ vi.mock("@/auth", () => ({
 // Cache revalidation is Next.js request plumbing, not the seam under test.
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
+import { pinTimeZone } from "../../../../test/time-zone";
 import { auth } from "@/auth";
 import { AuthorizationError } from "@/lib/authz";
 import {
@@ -232,8 +233,7 @@ describe.skipIf(!testDatabaseUrl)("asset actions (real DB)", () => {
   it("accepts a zero purchase price and pins dates to UTC midnight", async () => {
     await signInAs(Role.PROCUREMENT);
     const tag = uniqueTag();
-    const originalTz = process.env.TZ;
-    process.env.TZ = "Africa/Nairobi";
+    const restoreTz = pinTimeZone("Africa/Nairobi");
 
     try {
       await createAssetExpectingRedirect(
@@ -246,7 +246,7 @@ describe.skipIf(!testDatabaseUrl)("asset actions (real DB)", () => {
         }),
       );
     } finally {
-      process.env.TZ = originalTz;
+      restoreTz();
     }
 
     const asset = await db.asset.findUniqueOrThrow({ where: { tag } });

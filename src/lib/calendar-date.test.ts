@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
+import { pinTimeZone } from "../../test/time-zone";
 import { calendarDate, calendarDateInputValue } from "./calendar-date";
 
 /**
@@ -19,15 +20,16 @@ import { calendarDate, calendarDateInputValue } from "./calendar-date";
  */
 const UTC_MIDNIGHT = new Date("2026-06-21T00:00:00.000Z");
 
-let originalTz: string | undefined;
+const restorers: Array<() => void> = [];
 
 afterEach(() => {
-  process.env.TZ = originalTz;
+  // Unwound in reverse so the earliest capture — the real ambient state — is
+  // the one restored last, whatever order the zones were pinned in.
+  while (restorers.length > 0) restorers.pop()?.();
 });
 
 function withZone(zone: string): void {
-  originalTz ??= process.env.TZ;
-  process.env.TZ = zone;
+  restorers.push(pinTimeZone(zone));
 }
 
 describe("calendarDate", () => {

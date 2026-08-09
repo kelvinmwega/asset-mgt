@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { withTimeZone } from "../../test/time-zone";
 import { exactTimestamp, relativeTime } from "./relative-time";
 
 const now = new Date("2026-08-02T12:00:00.000Z");
@@ -71,16 +72,15 @@ describe("relativeTime", () => {
    * one.
    */
   it("is zone-independent", () => {
-    const original = process.env.TZ;
-    try {
-      process.env.TZ = "Pacific/Kiritimati"; // UTC+14
-      const east = relativeTime(ago(3 * DAY), now);
-      process.env.TZ = "Pacific/Midway"; // UTC-11
-      expect(relativeTime(ago(3 * DAY), now)).toBe(east);
-      expect(east).toBe("3 days ago");
-    } finally {
-      process.env.TZ = original;
-    }
+    const east = withTimeZone("Pacific/Kiritimati", () =>
+      relativeTime(ago(3 * DAY), now),
+    ); // UTC+14
+    const west = withTimeZone("Pacific/Midway", () =>
+      relativeTime(ago(3 * DAY), now),
+    ); // UTC-11
+
+    expect(west).toBe(east);
+    expect(east).toBe("3 days ago");
   });
 });
 
@@ -136,14 +136,11 @@ describe("exactTimestamp", () => {
    * anything.
    */
   it("ignores the ambient process timezone", () => {
-    const original = process.env.TZ;
-    try {
-      process.env.TZ = "Pacific/Kiritimati"; // UTC+14
-      expect(exactTimestamp(INSTANT, "UTC")).toBe("2026-08-01 21:21 UTC");
-      process.env.TZ = "Pacific/Midway"; // UTC-11
-      expect(exactTimestamp(INSTANT, "UTC")).toBe("2026-08-01 21:21 UTC");
-    } finally {
-      process.env.TZ = original;
+    for (const ambient of ["Pacific/Kiritimati", "Pacific/Midway"]) {
+      // UTC+14, UTC-11
+      expect(withTimeZone(ambient, () => exactTimestamp(INSTANT, "UTC"))).toBe(
+        "2026-08-01 21:21 UTC",
+      );
     }
   });
 

@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { pinTimeZone } from "../../test/time-zone";
 import { AssignmentCardList } from "./assignment-card-list";
 
 const OUT = new Date("2026-06-01T08:00:00.000Z");
@@ -14,15 +15,14 @@ const BACK = new Date("2026-07-01T17:00:00.000Z");
  * stable; that the zone is honoured at all is asserted in timestamp.test.tsx,
  * from a non-UTC zone, which is the only place it means anything.
  */
-let originalTz: string | undefined;
+let restoreTz: () => void;
 
 beforeAll(() => {
-  originalTz = process.env.TZ;
-  process.env.TZ = "UTC";
+  restoreTz = pinTimeZone("UTC");
 });
 
 afterAll(() => {
-  process.env.TZ = originalTz;
+  restoreTz();
 });
 
 const assetRow = {

@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { pinTimeZone } from "../../test/time-zone";
 import { Timestamp } from "./timestamp";
 
 const VALUE = new Date("2026-07-01T09:30:00.000Z");
@@ -24,15 +25,14 @@ const VIEWER_ZONE = "Africa/Nairobi";
 const IN_VIEWER_ZONE = "2026-07-01 12:30 GMT+3";
 const IN_UTC = "2026-07-01 09:30 UTC";
 
-let originalTz: string | undefined;
+let restoreTz: () => void;
 
 beforeEach(() => {
-  originalTz = process.env.TZ;
-  process.env.TZ = VIEWER_ZONE;
+  restoreTz = pinTimeZone(VIEWER_ZONE);
 });
 
 afterEach(() => {
-  process.env.TZ = originalTz;
+  restoreTz();
 });
 
 describe("Timestamp", () => {
