@@ -4,7 +4,8 @@
 **Tier:** T3 — deliberate reversal of a shipped audit-rendering decision
 (AM-09 §4.3). The candidate data migration that also carried the tier has been
 **dropped from scope** — see §6.
-**Advisor consult:** **non-responsive; CLAUDE.md fallback invoked** — see §5.
+**Advisor consult:** 2026-08-09 — **concurs with what shipped on Q1, Q2 and Q3**,
+with eight conditions (C1–C8), all met. See §5.
 **Brief:** `docs/intake/asset-mgt/PRD.md` — no story; raised directly by Kelvin
 **Date:** 2026-08-09
 **Status:** Approved by Kelvin (rendering approach, zone label, fallback)
@@ -202,37 +203,68 @@ deferred rather than decided here (§6, §8).
   fingerprinting signal about a data subject. Reading it via
   `Intl.DateTimeFormat().resolvedOptions().timeZone` collects and transmits
   **nothing** — it is computed and used in the browser and never leaves it. A
-  timezone cookie would be a genuinely different act: a new client-derived
-  signal about the person crossing the wire and landing in request logs. That
-  asymmetry is why the cookie is rejected in §4 rather than merely deprioritised.
-  (ii) No new data is displayed — the same instants render, in a different zone,
+  timezone cookie would be a different act: a new client-derived signal about
+  the person crossing the wire and landing in request logs. **Stated at the
+  right strength (advisor C8): that would not be unlawful, it would buy a legal
+  review this story has no need to buy.** Two engineering reasons kill the
+  cookie independently of any of that — it does not remove the client component,
+  because there is no cookie on the first request, and it makes the HTML vary by
+  viewer zone, which AM-06's planned service worker would cache and replay
+  across zones. `x-vercel-ip-timezone` is rejected on the same grounds plus a
+  worse one: it infers the zone from network location, which is wrong for a VPN
+  and wrong for a traveller. (ii) No new data is displayed — the same instants render, in a different zone,
   so the DPA note's "displayed rather than stored" trigger is examined and found
   not to fire. (iii) `STAFF_RO` person-data rules are untouched: timestamps are
   not person data and `personSelectFor` is not modified.
 - **Tenant scoping:** not applicable — single-tenant register, no read or write
   path changes.
 - **Secrets handling:** unchanged.
-- **Advisor ruling:** **none — the agent was non-responsive.** Consulted
-  2026-08-09 with a four-question T3 brief (storage proportionality, the
-  calendar-date columns, per-viewer vs fixed-zone rendering, blast-radius
-  conditions), followed by two further messages carrying verified probe results
-  and a status check. No reply over ~30 minutes. This is the second occurrence;
-  the first was AM-09, which is what put the fallback clause in CLAUDE.md, and
-  that clause says to fall back rather than spend the session diagnosing it.
+- **Advisor ruling (2026-08-09): concurs with what shipped on Q1, Q2 and Q3**,
+  with eight conditions. All eight are met; each is answered individually in the
+  PR body, which is what the T3 gate requires.
 
-  **The T3 floor is therefore satisfied by the substitute route, all three
-  parts:**
+  | #   | Condition                                                        | Met by                                                                 |
+  | --- | ---------------------------------------------------------------- | ---------------------------------------------------------------------- |
+  | C1  | Zone label is `shortOffset`, not `short`                         | `relative-time.ts`; red-proven with `short` + `en-US` → `EDT`/`EST`    |
+  | C2  | DST applied per instant                                          | New York renders `GMT-5` in January, `GMT-4` in July                   |
+  | C3  | G6 upgraded to the local-midnight straddle; caveat removed       | §7 G6                                                                  |
+  | C4  | `timestamptz` recorded as a tracked follow-up **with a trigger** | §8                                                                     |
+  | C5  | Session `TimeZone` canary                                        | `db.integration.test.ts`, scoped honestly                              |
+  | C6  | `dateTime` byte-identical across zones, variants, renderers      | `timestamp.test.tsx`                                                   |
+  | C7  | Pre-existing SSR assertions unchanged                            | verified; one file gained a TZ pin — reported in the PR, not justified |
+  | C8  | No timezone cookie, no `x-vercel-ip-timezone`                    | client-side `resolvedOptions()` only                                   |
 
-  1. **Guards enumerated in this document _before_ implementation** — §7 G1–G6,
-     committed in `99db4b1` while the consult was still outstanding.
-  2. **Kelvin's recorded decision naming that specific list** — 2026-08-09,
-     choosing the fallback over waiting, and dropping the storage migration from
-     scope on the grounds that its justification was the proportionality call
-     that has no ruling.
-  3. **Each guard proven red** — by deleting the production line it defends and
-     watching it fail. Evidenced one-by-one in the PR body.
+  **Two of its findings changed the design rather than ratifying it**, and both
+  were things I had got wrong:
 
-  Precedent and worked example: `docs/features/AM-09/DESIGN.md` §7.
+  - **C1.** I had reasoned that pinning `en-GB` made `short` safe. It does —
+    _by CLDR coincidence_. Under `en-US`, `America/Chicago` renders `CST`, which
+    is equally China Standard Time (+8), US Central (−6) and Cuba. Since this
+    story is precisely the one that invites someone to reach for the viewer's
+    locale, the label is now an offset, which cannot be ambiguous in any locale.
+  - **C3.** I had recorded G6 as "guards an absence, therefore not
+    red-provable". That was wrong: it guards a _property_ (zone-invariance), and
+    a realistic mutant exists — a future "make `yesterday` mean calendar
+    yesterday" refactor. The fixture now straddles local midnight in Nairobi and
+    not in Los Angeles, and that mutant dies. The caveat is withdrawn.
+
+  It also corrected the **framing** of the DPA argument in this section, which
+  is amended above: a timezone cookie is not unlawful, it "buys a legal review
+  you have no need to buy". Two engineering reasons kill it independently — it
+  does not remove the client component (there is no cookie on the first
+  request), and it makes HTML vary by viewer zone, which AM-06's planned service
+  worker would cache and replay across zones.
+
+  **Process note.** The ruling arrived late: three messages went unanswered for
+  ~30 minutes, and mid-flight I invoked the CLAUDE.md fallback with Kelvin's
+  recorded decision. The cause was that the agent's earlier replies were sent in
+  a form that never reached this session, not a stall. **The fallback is
+  therefore superseded and is not what this story merges on** — a real ruling
+  displaces it, and nothing had been merged. The guard list was nonetheless
+  enumerated in this document before implementation (`99db4b1`, which precedes
+  every `src/` commit on the branch), so the substitute route was genuinely
+  available rather than merely asserted. Precedent for it:
+  `docs/features/AM-09/DESIGN.md` §7.
 
 ## 6. Migration & rollout
 
@@ -294,13 +326,35 @@ makes G2 testable.
       zones yields three different strings, each ending in a non-empty zone
       token. Red: dropped `timeZoneName` — 4 tests **failed**, the value
       rendering as `2026-08-02 00:00 ` with a trailing space and no zone.
-- [x] **G6 — `relativeTime` stays zone-independent.** Identical output under
-      `Pacific/Kiritimati` and `Pacific/Midway`; no zone parameter exists on it.
-      **Not deletion-red-provable, and recorded as such rather than claimed**:
-      it guards the _absence_ of a zone dependency, so there is no line to
-      remove. It is a characterisation test and worth less than G1–G5.
+- [x] **G6 — `relativeTime` stays zone-independent** (upgraded, advisor C3).
+      A value three hours before `now`, positioned to straddle local midnight in
+      `Africa/Nairobi` and not in `America/Los_Angeles`, reads `3 hours ago` in
+      both. Red: reimplemented `yesterday` as local calendar-day arithmetic —
+      **failed**, returning `yesterday` in Nairobi.
+      The earlier version of this guard compared two zones on a three-day-old
+      value, which no realistic mutant fails, and was recorded here as "not
+      red-provable". **That was wrong** — it guards a property, not an absence.
+- [x] **C1 — the zone label is an offset, never an abbreviation.** Every zone
+      renders `GMT±N`; `UTC` is the one deliberate exception. Red: switched to
+      `short` under `en-US` — **failed** with `EDT`/`EST`.
+- [x] **C2 — DST is applied per instant.** New York renders `GMT-5` in January
+      and `GMT-4` in July. Red: hoisted the label out of the per-row path,
+      computing it once per zone from a fixed instant — **failed**, July
+      rendering `GMT-5`.
+- [x] **C6 — `dateTime` is byte-identical across zones, variants, renderers.**
+      Two opposite-sign zones × both variants × server and client, with a
+      control asserting the visible text _does_ differ across those combinations
+      (without it the guard would pass against a component that ignored the zone
+      entirely).
 - **G7 — withdrawn with the storage change.** It guarded the migration; there
   is no migration. Re-instate it with the deferred story (§8).
+
+**On zone choice in the guards** (advisor). The two hazards break under
+_opposite_ offsets: the display hazard (UTC midnight read in the viewer's zone)
+breaks west of UTC and is safe in Nairobi; the input hazard (local midnight
+truncated to a UTC date) breaks east of UTC and is safe in New York. Neither
+zone alone proves both, and `TZ=UTC` — what CI runs — proves neither. G1 spans
+UTC+14/UTC−11/UTC+3, G2 pins Nairobi, and G6/C6 pin Nairobi against Los Angeles.
 
 ### Verified in a real browser
 
@@ -327,11 +381,28 @@ rather than a shortcut.
 
 - **The `timestamptz` / `@db.Date` storage migration — DEFERRED, not rejected.**
   The analysis in §1 and §6 stands and should be the starting point. It needs
-  its own story, its own advisor consult on proportionality, and guard G7. It is
-  not urgent: storage is already reliably UTC through Prisma, and the path that
-  would break it is unreachable from this codebase today. What would make it
-  urgent is anyone adding a `$executeRaw` that inserts into a timestamp column,
-  or a manual psql fix-up against production.
+  its own story, its own advisor consult, and guard G7.
+
+  **Trigger (advisor C4) — do it at the first of these, not "someday":**
+
+  1. The first **backfill migration** that touches a timestamp column. An
+     `UPDATE … SET x = CURRENT_TIMESTAMP` is in-repo, is not insert-shaped, and
+     no guard here sees it.
+  2. The first **manual psql or GUI data fix against production**. DataGrip and
+     TablePlus commonly set the session zone to the operator's local one, and on
+     a register with no delete path and no correction UI, manual intervention is
+     the documented escape hatch rather than an exotic event.
+
+  The advisor's reasoning for deferring, recorded because it inverts the
+  intuition: the migration would introduce a **live** risk to close a **dormant**
+  one — a reversed `USING … AT TIME ZONE 'UTC'` silently shifts the entire audit
+  history by the session offset, against tables this codebase forbids updating.
+
+  **A bare `DROP DEFAULT` is not an acceptable substitute.** Prisma sees that as
+  drift and will re-add the default on the next `migrate dev` — unlike the
+  hand-written `Asset_tag_required_when_tracked` CHECK block, which it is blind
+  to and therefore leaves alone.
+
 - **Per-user timezone preference** (schema + settings UI) — the browser already
   knows the right answer.
 - **Timezone cookie / server-side localisation** — §4, §5.
