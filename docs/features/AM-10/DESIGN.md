@@ -268,26 +268,56 @@ below pins its zone explicitly.** Node honours a runtime `process.env.TZ`
 change (verified: `Intl` and `Date` parsing both pick it up), which is what
 makes G2 testable.
 
-- [ ] **G1 — calendar dates never shift.** Render an asset with
-      `purchasedAt = 2026-06-21T00:00:00Z` with the viewer zone forced to
-      `Pacific/Kiritimati` (UTC+14) and `Pacific/Midway` (UTC-11); assert
-      `21 Jun 2026` both times. Red: delete `timeZone: "UTC"` from `DATE_FORMAT`.
-- [ ] **G2 — the UTC-midnight pin holds.** With `TZ=Africa/Nairobi`,
-      `optionalDate` parsing `"2026-06-21"` yields exactly
-      `2026-06-21T00:00:00.000Z`. Red: remove the `Z` from the template literal.
-- [ ] **G3 — the machine-readable value stays UTC.** `<time dateTime>` equals
+- [x] **G1 — calendar dates never shift.** `calendarDate` reads `21 Jun 2026`
+      for a UTC-midnight value with the process zone forced to
+      `Pacific/Kiritimati` (UTC+14), `Pacific/Midway` (UTC-11) and
+      `Africa/Nairobi` (UTC+3). Red: deleted `timeZone: "UTC"` — **failed** with
+      `20 Jun 2026`, the one-day shift this exists to prevent.
+      The formatter had to move out of module scope to make this provable at
+      all; a module-scope one caches the zone set at import time, so the test
+      would have passed with the pin deleted (§3.3).
+- [x] **G2 — the UTC-midnight pin holds.** With `TZ=Africa/Nairobi`, submitting
+      `2026-03-15` stores exactly `2026-03-15T00:00:00.000Z`. Red: removed the
+      `Z` from `optionalDate`'s template literal — **failed** with
+      `2026-03-14T21:00:00.000Z`, a day early, which is the corruption this
+      whole story risked introducing.
+- [x] **G3 — the machine-readable value stays UTC.** `<time dateTime>` equals
       `value.toISOString()` in both variants under a non-UTC viewer zone. Red:
-      point `dateTime` at the localised string.
-- [ ] **G4 — the server render is UTC and says so.** The 14 existing
-      integration assertions on `"… UTC"` in server-rendered HTML keep passing
-      **unchanged**. Red: resolve the zone during SSR instead of after mount.
-- [ ] **G5 — the zone is always named.** The same instant formatted in three
+      pointed `dateTime` at the localised string — `timestamp.test.tsx`
+      "always carries a UTC machine-readable dateTime" **failed**.
+- [x] **G4 — the server render is UTC and says so.** The 14 existing
+      integration assertions on `"… UTC"` in server-rendered HTML pass
+      **unchanged**. Red: resolved the zone in a `useState` initialiser rather
+      than an effect — "falls back to UTC where the viewer's zone is not yet
+      known" **failed**, the markup leaking `GMT+3`.
+- [x] **G5 — the zone is always named.** The same instant formatted in three
       zones yields three different strings, each ending in a non-empty zone
-      token. Red: drop `timeZoneName` from the formatter.
-- [ ] **G6 — `relativeTime` stays zone-independent.** Identical output under two
-      viewer zones; no zone parameter exists on it.
+      token. Red: dropped `timeZoneName` — 4 tests **failed**, the value
+      rendering as `2026-08-02 00:00 ` with a trailing space and no zone.
+- [x] **G6 — `relativeTime` stays zone-independent.** Identical output under
+      `Pacific/Kiritimati` and `Pacific/Midway`; no zone parameter exists on it.
+      **Not deletion-red-provable, and recorded as such rather than claimed**:
+      it guards the _absence_ of a zone dependency, so there is no line to
+      remove. It is a characterisation test and worth less than G1–G5.
 - **G7 — withdrawn with the storage change.** It guarded the migration; there
   is no migration. Re-instate it with the deferred story (§8).
+
+### Verified in a real browser
+
+jsdom proves markup, never behaviour, and two claims above are behavioural.
+Checked signed-in against local Postgres, Chromium in `Europe/London`:
+
+- The swap happens and is **DST-correct on the same page** — a July event reads
+  `2026-07-31 23:08 BST`, a December one `2025-12-08 22:08 GMT`. A fixed offset
+  would have got the second wrong.
+- `dateTime` stayed `2026-07-31T22:08:42.369Z`; the purchase and warranty dates
+  stayed `31 Jul 2026` / `14 Jan 2026`.
+- **Zero console errors and zero warnings**, which is the actual test of the
+  no-hydration-mismatch claim — React logs those loudly in dev and would have
+  said so here.
+- The deactivation prose reads `deactivated on 2026-07-01 10:30 BST` with
+  `querySelectorAll("*")` inside the paragraph returning `[]` — the client
+  boundary moved without introducing the element wrapper that paragraph refuses.
 
 There are no advisor conditions to answer, because there is no ruling. §5
 records what stands in their place and why that is the documented substitute
