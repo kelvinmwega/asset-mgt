@@ -8,6 +8,8 @@ import { execSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { AssetEventType, AssetStatus, PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { singleConnectionUrl } from "../../test/session-lock-client";
 import {
   createHolderResolver,
   importAssetWithEvent,
@@ -26,7 +28,9 @@ describe.skipIf(!testDatabaseUrl)("asset import (real DB)", () => {
       env: { ...process.env, DATABASE_URL: testDatabaseUrl },
       stdio: "inherit",
     });
-    db = new PrismaClient({ datasourceUrl: testDatabaseUrl });
+    db = new PrismaClient({
+      datasourceUrl: singleConnectionUrl(testDatabaseUrl),
+    });
     const category = await db.category.create({
       data: { name: `Imported ${randomUUID()}` },
     });
@@ -301,7 +305,9 @@ describe.skipIf(!testDatabaseUrl)("asset import (real DB)", () => {
       // nullable now, so @unique no longer dedupes stub people and two
       // concurrent runs would each find no match and each create a "Jane".
       const name = uniqueName("Concurrent Holder");
-      const other = new PrismaClient({ datasourceUrl: testDatabaseUrl });
+      const other = new PrismaClient({
+        datasourceUrl: singleConnectionUrl(testDatabaseUrl),
+      });
       try {
         const order: string[] = [];
         const runOne = withImportLock(db, async () => {

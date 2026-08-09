@@ -431,6 +431,35 @@ rather than a shortcut.
   hand-written `Asset_tag_required_when_tracked` CHECK block, which it is blind
   to and therefore leaves alone.
 
+- **`scripts/import-assets.ts` and the session advisory lock — FOUND HERE, NOT
+  FIXED HERE.** Diagnosing a CI flake that blocked this PR turned up a real
+  defect in AM-04's lock handling. `withImportLock` takes a session-scoped
+  `pg_advisory_lock`, and **Prisma keeps a client-side connection pool even
+  against an unpooled URL**, so the unlock can be delivered to a different
+  backend than the lock. It then returns `false` — silently — and the lock
+  survives. Measured on this repo's Postgres 17:
+
+  ```
+  default pool        lockPid=15133 unlockPid=15136 released=false  LEAKED
+  connection_limit=1  lockPid=15150 unlockPid=15150 released=true   clean
+  ```
+
+  `withImportLock`'s `try/finally` is correct and never was the problem. The
+  docblock's claim that a session lock "REQUIRES an unpooled connection" is
+  **necessary but not sufficient** — it rules out PgBouncer moving the session,
+  not Prisma's own pool.
+
+  **The test clients are fixed in this PR** (`test/session-lock-client.ts`),
+  because the flake blocked this merge and Kelvin scoped that fix here.
+  `scripts/import-assets.ts:210` is **not** changed: it builds a plain
+  `PrismaClient` with the same hazard, and it is AM-04 production code that a
+  timezone story should not be quietly editing. It is not currently a live
+  outage — the CLI does one run per process and exit closes the connection,
+  releasing the lock — but the mutual-exclusion guarantee it advertises is
+  weaker than it claims, and a second `withImportLock` in one process would
+  block forever. **Fix: build that client from `singleConnectionUrl`, and
+  correct the docblock.**
+
 - **Per-user timezone preference** (schema + settings UI) — the browser already
   knows the right answer.
 - **Timezone cookie / server-side localisation** — §4, §5.
