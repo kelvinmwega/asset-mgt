@@ -1,12 +1,13 @@
 # Design: AM-10 — timestamps in the viewer's timezone
 
 **Slug:** `AM-10`
-**Tier:** T3 — candidate data migration across 9 tables, plus a deliberate
-reversal of a shipped audit-rendering decision (AM-09 §4.3)
-**Advisor consult:** pending
+**Tier:** T3 — deliberate reversal of a shipped audit-rendering decision
+(AM-09 §4.3). The candidate data migration that also carried the tier has been
+**dropped from scope** — see §6.
+**Advisor consult:** **non-responsive; CLAUDE.md fallback invoked** — see §5.
 **Brief:** `docs/intake/asset-mgt/PRD.md` — no story; raised directly by Kelvin
 **Date:** 2026-08-09
-**Status:** Draft
+**Status:** Approved by Kelvin (rendering approach, zone label, fallback)
 
 ## 1. Problem
 
@@ -132,7 +133,8 @@ than quietly shipped. Measured across `Intl` options:
 | `shortOffset`   | `GMT+3`            | `GMT+0`                      | `GMT+1`               | `GMT-4`                 | `GMT+5:30`            |
 | `long`          | `East Africa Time` | `Coordinated Universal Time` | `British Summer Time` | `Eastern Daylight Time` | `India Standard Time` |
 
-**Proposed: `short` under the app's existing `en-GB` locale**, giving
+**Decided by Kelvin (2026-08-09): `short` under the app's existing `en-GB`
+locale**, giving
 `2026-08-01 21:21 GMT+3` and keeping `2026-08-01 21:21 UTC` verbatim for the
 server render. It is unambiguous everywhere, needs no knowledge of zone
 abbreviations to reconcile, keeps `UTC` as the canonical audit label, and
@@ -157,7 +159,12 @@ Both are one-line changes if Kelvin prefers otherwise.
 
 ### Data model changes
 
-**Pending the advisor's ruling on proportionality**, the candidate is:
+**None. Dropped from scope** (Kelvin, 2026-08-09) — the storage change existed
+to be ruled on for proportionality, and with no ruling available the honest move
+is not to make a 9-table migration against an append-only audit register on my
+own judgement. It is deferred to its own story with its own consult (§8), and
+loses nothing today: §1 establishes that storage is already reliably UTC through
+Prisma. Recorded here so the analysis is not lost:
 
 - 21 instant columns → `@db.Timestamptz(3)`, via
   `ALTER TABLE … ALTER COLUMN … TYPE timestamptz(3) USING "col" AT TIME ZONE 'UTC'`.
@@ -183,7 +190,9 @@ None. No API, no event payload, no breaking change.
 | Timezone **cookie**, so the server can format          | Kills the UTC-then-local swap entirely                                                                 | Sends a client-derived signal about the data subject across the wire, tripping the DPA note's review trigger, to buy a cosmetic improvement. See §5 |
 | Per-user timezone column                               | Explicit, no probing                                                                                   | A schema change and a settings UI for something the browser already knows correctly                                                                 |
 
-Contested choices become ADRs: **none contested** pending the advisor.
+Contested choices become ADRs: **none contested**. The one genuinely contested
+question — whether a 9-table migration is proportionate to a dormant risk — is
+deferred rather than decided here (§6, §8).
 
 ## 5. Security review
 
@@ -203,11 +212,33 @@ Contested choices become ADRs: **none contested** pending the advisor.
 - **Tenant scoping:** not applicable — single-tenant register, no read or write
   path changes.
 - **Secrets handling:** unchanged.
-- **Advisor ruling:** _pending — §7 conditions are provisional until it lands._
+- **Advisor ruling:** **none — the agent was non-responsive.** Consulted
+  2026-08-09 with a four-question T3 brief (storage proportionality, the
+  calendar-date columns, per-viewer vs fixed-zone rendering, blast-radius
+  conditions), followed by two further messages carrying verified probe results
+  and a status check. No reply over ~30 minutes. This is the second occurrence;
+  the first was AM-09, which is what put the fallback clause in CLAUDE.md, and
+  that clause says to fall back rather than spend the session diagnosing it.
+
+  **The T3 floor is therefore satisfied by the substitute route, all three
+  parts:**
+
+  1. **Guards enumerated in this document _before_ implementation** — §7 G1–G6,
+     committed in `99db4b1` while the consult was still outstanding.
+  2. **Kelvin's recorded decision naming that specific list** — 2026-08-09,
+     choosing the fallback over waiting, and dropping the storage migration from
+     scope on the grounds that its justification was the proportionality call
+     that has no ruling.
+  3. **Each guard proven red** — by deleting the production line it defends and
+     watching it fail. Evidenced one-by-one in the PR body.
+
+  Precedent and worked example: `docs/features/AM-09/DESIGN.md` §7.
 
 ## 6. Migration & rollout
 
-Applies only if the advisor rules for the storage change.
+**No migration. No rollout steps. Nothing to roll back.** The section below is
+retained as the analysis a future consult should start from, not as work this
+story does.
 
 - **Steps.** One migration, additive in effect: the `timestamptz` conversions,
   then the two `date` conversions. No backfill — `USING … AT TIME ZONE 'UTC'`
@@ -255,13 +286,22 @@ makes G2 testable.
       token. Red: drop `timeZoneName` from the formatter.
 - [ ] **G6 — `relativeTime` stays zone-independent.** Identical output under two
       viewer zones; no zone parameter exists on it.
-- [ ] **G7 — (storage only) every instant survives the migration.** Real-DB
-      test: seed rows, migrate, assert identical ISO strings. Red: drop
-      `AT TIME ZONE 'UTC'` from the `USING` clause under a non-UTC session.
-- [ ] Advisor conditions from §5, each answered one-by-one in the PR body.
+- **G7 — withdrawn with the storage change.** It guarded the migration; there
+  is no migration. Re-instate it with the deferred story (§8).
+
+There are no advisor conditions to answer, because there is no ruling. §5
+records what stands in their place and why that is the documented substitute
+rather than a shortcut.
 
 ## 8. Rejected scope
 
+- **The `timestamptz` / `@db.Date` storage migration — DEFERRED, not rejected.**
+  The analysis in §1 and §6 stands and should be the starting point. It needs
+  its own story, its own advisor consult on proportionality, and guard G7. It is
+  not urgent: storage is already reliably UTC through Prisma, and the path that
+  would break it is unreachable from this codebase today. What would make it
+  urgent is anyone adding a `$executeRaw` that inserts into a timestamp column,
+  or a manual psql fix-up against production.
 - **Per-user timezone preference** (schema + settings UI) — the browser already
   knows the right answer.
 - **Timezone cookie / server-side localisation** — §4, §5.
