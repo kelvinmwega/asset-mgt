@@ -167,7 +167,14 @@ describe.skipIf(!testDatabaseUrl)("admin users page — last signed in", () => {
     // The phrase leads...
     expect(row).toContain(relativeTime(signedInAt, new Date()));
     // ...and the exact UTC value is one hover away, never replaced.
-    expect(row).toContain(exactTimestamp(signedInAt));
+    //
+    // "UTC" explicitly, and it is not a formality (AM-10). These assertions run
+    // against `renderToStaticMarkup`, which runs no effects, so
+    // `useViewerTimeZone` never resolves and the SERVER render is what is being
+    // asserted. That is exactly the property worth pinning: the no-JS and
+    // first-paint value must be UTC and must say so. Passing the viewer's zone
+    // here instead would assert nothing about either.
+    expect(row).toContain(exactTimestamp(signedInAt, "UTC"));
     expect(row).toContain(signedInAt.toISOString());
     expect(row).not.toContain("Never signed in");
   });
@@ -200,7 +207,7 @@ describe.skipIf(!testDatabaseUrl)("admin users page — last signed in", () => {
     expect(invited).toContain("Never signed in");
     expect(invited).toContain("Link sent");
     expect(invited).toContain(relativeTime(linkSentAt, new Date()));
-    expect(invited).toContain(exactTimestamp(linkSentAt));
+    expect(invited).toContain(exactTimestamp(linkSentAt, "UTC"));
 
     expect(never).not.toContain("Link sent");
   });
@@ -216,7 +223,7 @@ describe.skipIf(!testDatabaseUrl)("admin users page — last signed in", () => {
     const row = rowFor(await renderAsAdmin(), email);
 
     expect(row).toContain("Link sent");
-    expect(row).toContain(exactTimestamp(linkSentAt));
+    expect(row).toContain(exactTimestamp(linkSentAt, "UTC"));
   });
 
   it("matches the token identifier case-insensitively", async () => {
@@ -240,8 +247,8 @@ describe.skipIf(!testDatabaseUrl)("admin users page — last signed in", () => {
 
     const row = rowFor(await renderAsAdmin(), email);
 
-    expect(row).toContain(exactTimestamp(newest));
-    expect(row).not.toContain(exactTimestamp(oldest));
+    expect(row).toContain(exactTimestamp(newest, "UTC"));
+    expect(row).not.toContain(exactTimestamp(oldest, "UTC"));
   });
 
   // NOTE: there is deliberately no real-DB test for "two identifiers differing
