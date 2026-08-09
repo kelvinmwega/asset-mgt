@@ -10,6 +10,7 @@ import {
 import { ASSET_TRANSITIONS } from "@/lib/asset-lifecycle";
 import { assetDisplayName } from "@/lib/asset-display";
 import { requireRole } from "@/lib/authz";
+import { calendarDate, calendarDateInputValue } from "@/lib/calendar-date";
 import { CONDITION_LABELS } from "@/lib/labels";
 import { getDb } from "@/lib/db";
 import { canViewAssignments, personSelectFor } from "@/lib/person-visibility";
@@ -84,29 +85,23 @@ function returnDestinationsFor(status: AssetStatus): ReturnDestination[] {
   );
 }
 
-/** <input type="date"> wants YYYY-MM-DD; dates are written at UTC midnight. */
+/**
+ * A date to read, not to re-enter. `calendarDateInputValue`'s YYYY-MM-DD is the
+ * format an <input type="date"> requires and it leaked into the display grid,
+ * where "2026-06-21" is worse than "21 Jun 2026" for the one job it has.
+ *
+ * The rule itself — that these two fields are calendar dates and are pinned to
+ * UTC whoever is reading — moved to `@/lib/calendar-date` in AM-10, when every
+ * other timestamp on this page started moving with the viewer. Both wrappers
+ * are null-handling only; the formatting decisions live in that module and its
+ * tests.
+ */
 function toDateInput(value: Date | null): string {
-  return value ? value.toISOString().slice(0, 10) : "";
+  return value ? calendarDateInputValue(value) : "";
 }
 
-/**
- * A date to read, not to re-enter. `toDateInput`'s YYYY-MM-DD is the format an
- * <input type="date"> requires and it leaked into the display grid, where
- * "2026-06-21" is worse than "21 Jun 2026" for the one job it has.
- *
- * Explicit en-GB and UTC: the server's locale is not the reader's, and a
- * purchase date that shifts by a day depending on who is looking is a
- * reconciliation bug waiting to happen.
- */
-const DATE_FORMAT = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-  timeZone: "UTC",
-});
-
 function toDisplayDate(value: Date | null): string | null {
-  return value ? DATE_FORMAT.format(value) : null;
+  return value ? calendarDate(value) : null;
 }
 
 /**
