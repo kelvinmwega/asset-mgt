@@ -335,17 +335,29 @@ makes G2 testable.
       value, which no realistic mutant fails, and was recorded here as "not
       red-provable". **That was wrong** — it guards a property, not an absence.
 - [x] **C1 — the zone label is an offset, never an abbreviation.** Every zone
-      renders `GMT±N`; `UTC` is the one deliberate exception. Red: switched to
-      `short` under `en-US` — **failed** with `EDT`/`EST`.
+      renders `GMT±N`; `UTC` is the one deliberate exception. Red: reverted
+      `shortOffset` → `short`, **locale untouched** — **failed** on
+      `Europe/London` (`BST`) and `Europe/Paris` (`CEST`).
+      **The first version of this guard listed only zones that render as
+      offsets under `short` too** (Chicago, New York, Shanghai, Nairobi), so it
+      stayed green on a one-line revert and only failed under a two-part
+      mutation that also changed the locale — the #14 shape, caught at review
+      (B3). CLAUDE.md's rule is deletion of _the_ production line, not an
+      arbitrary edit near it; London and Paris are what make that true here.
 - [x] **C2 — DST is applied per instant.** New York renders `GMT-5` in January
       and `GMT-4` in July. Red: hoisted the label out of the per-row path,
       computing it once per zone from a fixed instant — **failed**, July
       rendering `GMT-5`.
 - [x] **C6 — `dateTime` is byte-identical across zones, variants, renderers.**
       Two opposite-sign zones × both variants × server and client, with a
-      control asserting the visible text _does_ differ across those combinations
-      (without it the guard would pass against a component that ignored the zone
-      entirely).
+      control on the visible text. Red: made the component ignore the viewer's
+      zone — **failed**, the control seeing 2 distinct strings where 3 are
+      required.
+      **The control asserted `size > 1` until review B4 and was vacuous** — the
+      relative variant renders `3 days ago` in both zones, so the two _variants_
+      alone cleared the bar and a zone-blind component passed. An earlier
+      revision of this section claimed the control prevented exactly that; it
+      did not. It is now an exact `size === 3`, and the claim is true.
 - [x] **B1 (review) — a missing zone can never become the ambient one.**
       `exactTimestamp` applies the UTC fallback itself; undefined, null and `""`
       all render `UTC` even under a poisoned ambient `TZ`. Red: removed

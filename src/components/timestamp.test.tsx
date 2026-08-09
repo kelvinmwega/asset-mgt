@@ -131,8 +131,22 @@ describe("Timestamp", () => {
       }
     }
 
-    // The control: if the text did NOT differ across those combinations, the
-    // assertion above would be proving nothing about zone-independence.
-    expect(rendered.size).toBeGreaterThan(1);
+    // The control, and it must be an EXACT count (review B4).
+    //
+    // `toBeGreaterThan(1)` was vacuous: the relative variant renders
+    // "3 days ago" in both zones, so a component that ignored the viewer's zone
+    // entirely still produced two distinct strings — the exact value and the
+    // relative phrase — and satisfied it. The two VARIANTS alone cleared the
+    // bar; the zone never entered into it.
+    //
+    // Three is the honest number, and the arithmetic is worth stating because
+    // it is what makes the control bite:
+    //
+    //   Nairobi  exact -> "2026-07-01 12:30 GMT+3"   |  relative -> "3 days ago"
+    //   LA       exact -> "2026-07-01 02:30 GMT-7"   |  relative -> "3 days ago"
+    //
+    // Two distinct exact values plus one shared relative phrase. A zone-blind
+    // component collapses the two exact values into one and yields 2.
+    expect(rendered.size).toBe(3);
   });
 });

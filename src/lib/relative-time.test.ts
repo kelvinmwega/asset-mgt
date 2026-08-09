@@ -199,9 +199,20 @@ describe("exactTimestamp", () => {
    * latent rather than absent, and "display in the user's timezone" is exactly
    * the change that invites someone to reach for the viewer's locale too.
    *
-   * Red-proven by switching the formatter to `short`: under en-US this test
-   * fails. It is asserted structurally rather than against a literal so it
-   * keeps holding as CLDR data changes.
+   * **`Europe/London` and `Europe/Paris` are what make this a guard** (review
+   * B3). The first version listed only Chicago, New York, Shanghai and Nairobi
+   * — every one of which renders as `GMT±N` under `short` **and**
+   * `shortOffset` in `en-GB`. Reverting `timeZoneName` alone therefore left it
+   * green; it only failed under a two-part mutation that also changed the
+   * locale, which is not what CLAUDE.md means by red-proving a guard, and is
+   * the shape of the #14 defect.
+   *
+   * At `INSTANT` (August) London is `BST` and Paris `CEST` under `short`, and
+   * `GMT+1`/`GMT+2` under `shortOffset` — so a one-line revert of the
+   * production line now fails this test, which is the whole point of it.
+   *
+   * Asserted structurally rather than against literals so it keeps holding as
+   * CLDR data changes.
    */
   it("labels every zone with an unambiguous offset", () => {
     for (const zone of [
@@ -209,6 +220,9 @@ describe("exactTimestamp", () => {
       "America/New_York",
       "Asia/Shanghai",
       "Africa/Nairobi",
+      // The discriminators — see the docblock. Do not remove.
+      "Europe/London",
+      "Europe/Paris",
     ]) {
       const label = exactTimestamp(INSTANT, zone).split(" ").at(-1);
       expect(label).toMatch(/^GMT[+-]\d{1,2}(:\d{2})?$/);
