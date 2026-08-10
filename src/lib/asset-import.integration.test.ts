@@ -340,7 +340,15 @@ describe.skipIf(!testDatabaseUrl)("asset import (real DB)", () => {
         SELECT count(*)::int AS held FROM pg_locks
         WHERE locktype = 'advisory'
           AND objid = ${IMPORT_ADVISORY_LOCK_KEY}
-          AND objsubid = 1`;
+          AND objsubid = 1
+          -- Scoped to THIS database. Cluster-wide visibility is the point of
+          -- using pg_locks at all, but it also makes this the one assertion in
+          -- the suite that can fail because of something it does not own — the
+          -- dev database shares this cluster. Narrowing to the current database
+          -- keeps the leak detection and drops the cross-database noise.
+          AND database = (
+            SELECT oid FROM pg_database WHERE datname = current_database()
+          )`;
 
       expect(held).toBe(0);
     });
