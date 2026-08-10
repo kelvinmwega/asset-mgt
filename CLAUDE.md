@@ -133,12 +133,36 @@ ADR: `docs/adr/ADR-001-vercel-neon-stack.md` · Stories: `docs/intake/asset-mgt/
 - **The import is a CLI, and there is no upload endpoint** (`pnpm db:import`).
   `--commit` holds a session-scoped advisory lock across ~400 per-row
   transactions, so it needs an **unpooled** connection and does not fit a
-  Vercel function. Its events carry `actorId: null`, the same "system action"
+  Vercel function — but see the next bullet: **unpooled is necessary and not
+  sufficient.** Its events carry `actorId: null`, the same "system action"
   convention as the seed scripts. **No spreadsheet-parser dependency beyond
   `fflate`**, and no general XML parser — the reader hand-scans exactly four
   zip entries (billion-laughs/XXE). npm's `xlsx` is stale at 0.18.5 with fixes
   shipped only to SheetJS's own CDN; `exceljs` evaluates formulas and images
   we never read.
+- **An unpooled URL does NOT make a session advisory lock safe — the client
+  holding it must also be pinned to one connection** (AM-10). `pg_advisory_lock`
+  is owned by the _backend_ that took it, and **Prisma keeps its own client-side
+  pool even against a direct, non-PgBouncer URL**, so the lock and its
+  `pg_advisory_unlock` can land on different backends. The unlock then returns
+  `false` — **silently; it is not an error** — and the lock survives. Measured
+  here: `lockPid=15133 unlockPid=15136 released=false` on a default pool, clean
+  at `connection_limit=1`. `withImportLock`'s `try/finally` is correct and
+  cannot help; the statement runs, it just runs in the wrong session.
+  **The failure is a DEADLOCK, not a lost mutex.** The lock is over-held, so the
+  next acquire in the same process blocks forever — which is why a CLI that does
+  one run and exits hides it entirely, and why it surfaced only in the
+  integration suite (many runs, one process) as an intermittent 20s test timeout
+  followed by a 10s `$disconnect()` hook timeout, on CI and never locally.
+  The test clients are pinned (`test/session-lock-client.ts`) and guarded by a
+  `pg_locks` assertion — **cluster-wide on purpose**, because a
+  `pg_backend_pid()` equality check passes by luck whenever the pool hands back
+  the same connection. **`scripts/import-assets.ts` is NOT yet pinned**: not a
+  live outage, since one run per process plus exit releases the lock, but the
+  mutual exclusion it advertises is weaker than it claims, and a second
+  `withImportLock` in one process would hang. Fix, cost (`connection_limit=1`
+  means a concurrent query inside the locked section fails `P2024` after
+  `pool_timeout`) and rationale: `docs/features/AM-10/DESIGN.md` §8.
 - **`ImportBatch` is a bounded state row carrying no personal data.** Written
   once at run start, updated exactly once at run end, never deleted — the same
   bounded exception `Assignment` carries. `report` holds no name, email,
