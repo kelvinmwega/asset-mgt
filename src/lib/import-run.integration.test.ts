@@ -7,6 +7,8 @@ import { execSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { AssetStatus, PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { singleConnectionUrl } from "../../test/session-lock-client";
 import { IMPORT_PROBLEMS } from "@/lib/import-map";
 import {
   ImportFileError,
@@ -26,7 +28,9 @@ describe.skipIf(!testDatabaseUrl)("import run (real DB)", () => {
       env: { ...process.env, DATABASE_URL: testDatabaseUrl },
       stdio: "inherit",
     });
-    db = new PrismaClient({ datasourceUrl: testDatabaseUrl });
+    db = new PrismaClient({
+      datasourceUrl: singleConnectionUrl(testDatabaseUrl),
+    });
   });
 
   afterAll(async () => {

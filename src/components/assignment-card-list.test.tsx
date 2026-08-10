@@ -1,10 +1,29 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { pinTimeZone } from "../../test/time-zone";
 import { AssignmentCardList } from "./assignment-card-list";
 
 const OUT = new Date("2026-06-01T08:00:00.000Z");
 const BACK = new Date("2026-07-01T17:00:00.000Z");
+
+/**
+ * This file's subject is the card list, not timezones — but `<Timestamp>`
+ * renders in the viewer's zone since AM-10, so without a pin these assertions
+ * read whatever zone the machine happens to be in: UTC in CI, something else on
+ * every developer's laptop. Pinned to UTC so the fixtures stay legible and
+ * stable; that the zone is honoured at all is asserted in timestamp.test.tsx,
+ * from a non-UTC zone, which is the only place it means anything.
+ */
+let restoreTz: () => void;
+
+beforeAll(() => {
+  restoreTz = pinTimeZone("UTC");
+});
+
+afterAll(() => {
+  restoreTz();
+});
 
 const assetRow = {
   id: "a1",

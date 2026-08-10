@@ -32,6 +32,7 @@ vi.mock("@/auth", () => ({
 // Cache revalidation is Next.js request plumbing, not the seam under test.
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
+import { pinTimeZone } from "../../../../test/time-zone";
 import { auth } from "@/auth";
 import { AuthorizationError } from "@/lib/authz";
 import {
@@ -209,19 +210,44 @@ describe.skipIf(!testDatabaseUrl)("asset actions (real DB)", () => {
     }
   });
 
+  /**
+   * G2 (DESIGN §7). `<input type="date">` submits a bare `YYYY-MM-DD`, and
+   * `optionalDate` pins it with an explicit `Z`. Without that character
+   * `new Date("2026-03-15T00:00:00")` is parsed in the SERVER's zone, and every
+   * purchase and warranty date lands a day early for every zone east of UTC —
+   * which is all of them here, since the deployment zone is UTC+3.
+   *
+   * **The process zone is pinned because CI has no `TZ` and runs in UTC**,
+   * where the pinned and unpinned forms parse identically and this test would
+   * pass against the bug forever. It only ever failed on a developer's laptop
+   * before — the same shape as the hand-edited-migration trap in LEARNINGS.
+   *
+   * Red-proven by deleting the `Z` from the template literal in
+   * `optionalDate`: the stored value becomes 2026-03-14T21:00:00.000Z.
+   *
+   * This matters more since AM-10 than before it. Everything else on these
+   * pages now moves with the viewer, so a date input silently acquiring a
+   * timezone is the one change that would corrupt data rather than merely
+   * display it oddly.
+   */
   it("accepts a zero purchase price and pins dates to UTC midnight", async () => {
     await signInAs(Role.PROCUREMENT);
     const tag = uniqueTag();
+    const restoreTz = pinTimeZone("Africa/Nairobi");
 
-    await createAssetExpectingRedirect(
-      createFields({
-        tag,
-        status: AssetStatus.IN_STOCK,
-        // 0 is a real price for donated kit — .positive() would reject it.
-        purchasePrice: "0",
-        purchasedAt: "2026-03-15",
-      }),
-    );
+    try {
+      await createAssetExpectingRedirect(
+        createFields({
+          tag,
+          status: AssetStatus.IN_STOCK,
+          // 0 is a real price for donated kit — .positive() would reject it.
+          purchasePrice: "0",
+          purchasedAt: "2026-03-15",
+        }),
+      );
+    } finally {
+      restoreTz();
+    }
 
     const asset = await db.asset.findUniqueOrThrow({ where: { tag } });
     expect(asset.purchasePrice?.toString()).toBe("0");

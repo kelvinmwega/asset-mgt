@@ -46,9 +46,32 @@ vi.mock("@/auth", () => ({
 
 import { auth } from "@/auth";
 import AdminUsersPage from "@/app/(app)/admin/users/page";
-import { exactTimestamp, relativeTime } from "@/lib/relative-time";
+import { relativeTime } from "@/lib/relative-time";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
+
+/**
+ * The expected server-rendered timestamp, built INDEPENDENTLY of the code under
+ * test (review finding B2).
+ *
+ * These assertions previously called `exactTimestamp` to construct the value
+ * they then looked for in the page — so both sides came from the same function
+ * and the pair agreed with itself no matter what that function did. It was not
+ * theoretical: when a formatter regression made the SSR fallback render `GMT+0`
+ * instead of `UTC`, the files asserting literal strings failed and this file
+ * passed.
+ *
+ * This is deliberately a second implementation of the same rule, not a call to
+ * the first — that is the entire point, and it is why it must NOT be refactored
+ * to share code with `exactTimestamp`. It encodes the property the server render
+ * must hold: UTC, to the minute, labelled `UTC`.
+ *
+ * `renderToStaticMarkup` runs no effects, so `useViewerTimeZone` never resolves
+ * and UTC is what the page must emit here.
+ */
+function expectedUtcTimestamp(value: Date): string {
+  return `${value.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+}
 const mockAuth = auth as unknown as Mock;
 
 const HOUR = 60 * 60 * 1000;
@@ -167,7 +190,7 @@ describe.skipIf(!testDatabaseUrl)("admin users page — last signed in", () => {
     // The phrase leads...
     expect(row).toContain(relativeTime(signedInAt, new Date()));
     // ...and the exact UTC value is one hover away, never replaced.
-    expect(row).toContain(exactTimestamp(signedInAt));
+    expect(row).toContain(expectedUtcTimestamp(signedInAt));
     expect(row).toContain(signedInAt.toISOString());
     expect(row).not.toContain("Never signed in");
   });
@@ -200,7 +223,7 @@ describe.skipIf(!testDatabaseUrl)("admin users page — last signed in", () => {
     expect(invited).toContain("Never signed in");
     expect(invited).toContain("Link sent");
     expect(invited).toContain(relativeTime(linkSentAt, new Date()));
-    expect(invited).toContain(exactTimestamp(linkSentAt));
+    expect(invited).toContain(expectedUtcTimestamp(linkSentAt));
 
     expect(never).not.toContain("Link sent");
   });
@@ -216,7 +239,7 @@ describe.skipIf(!testDatabaseUrl)("admin users page — last signed in", () => {
     const row = rowFor(await renderAsAdmin(), email);
 
     expect(row).toContain("Link sent");
-    expect(row).toContain(exactTimestamp(linkSentAt));
+    expect(row).toContain(expectedUtcTimestamp(linkSentAt));
   });
 
   it("matches the token identifier case-insensitively", async () => {
@@ -240,8 +263,8 @@ describe.skipIf(!testDatabaseUrl)("admin users page — last signed in", () => {
 
     const row = rowFor(await renderAsAdmin(), email);
 
-    expect(row).toContain(exactTimestamp(newest));
-    expect(row).not.toContain(exactTimestamp(oldest));
+    expect(row).toContain(expectedUtcTimestamp(newest));
+    expect(row).not.toContain(expectedUtcTimestamp(oldest));
   });
 
   // NOTE: there is deliberately no real-DB test for "two identifiers differing

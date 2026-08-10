@@ -53,10 +53,95 @@ export function relativeTime(value: Date, now: Date): string {
 }
 
 /**
- * The exact value, for the `title` and for anything reconciling against another
- * system. UTC and ISO-shaped on purpose: the server's locale is not the
- * reader's, and an audit trail that renders differently per viewer is not one.
+ * `Intl.DateTimeFormat` construction is the expensive part, and this is called
+ * once per row on a page that renders every asset. One formatter per zone, and
+ * in practice the map holds one entry: the viewer's.
  */
-export function exactTimestamp(value: Date): string {
-  return `${value.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+const FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+
+function formatterFor(timeZone: string): Intl.DateTimeFormat {
+  let formatter = FORMATTERS.get(timeZone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      // `hourCycle` rather than `hour12: false`, which is the form that renders
+      // midnight as "24:00" under some locale/engine pairs. Both are correct in
+      // en-GB today; only one says so.
+      hourCycle: "h23",
+      // The zone is NEVER omitted — see the docblock on exactTimestamp.
+      //
+      // `shortOffset`, not `short` (advisor condition C1). `short` returns a
+      // LOCALE-dependent abbreviation, and the ambiguous ones are real: under
+      // en-US, America/Chicago renders `CST`, which is equally China Standard
+      // Time (+8), US Central (-6) and Cuba. en-GB happens to return `GMT-6`
+      // there today, so pinning the locale hides the problem rather than
+      // solving it — and "adjust to the user" is a standing invitation for
+      // someone to switch this to the viewer's locale later. An offset cannot
+      // be ambiguous in any locale.
+      timeZoneName: "shortOffset",
+    });
+    FORMATTERS.set(timeZone, formatter);
+  }
+  return formatter;
+}
+
+/**
+ * The exact value, for the `title` and for anything reconciling against another
+ * system.
+ *
+ * AM-09 rendered this in UTC for every viewer, reasoning that an audit trail
+ * which renders differently per viewer is not one. AM-10 reverses that: staff
+ * are in UTC+3, so every reader was doing the arithmetic by hand. **The audit
+ * property is kept by two things instead, and neither is optional.**
+ *
+ * 1. **The zone is always in the visible text** — `2026-08-01 21:21 GMT+3`,
+ *    never a bare `21:21`. A screenshot that does not name its own clock cannot
+ *    be reconciled against another system, and two admins comparing screens
+ *    could not tell a timezone difference from a data difference.
+ * 2. **`<time dateTime>` stays UTC ISO-8601** (see src/components/timestamp.tsx).
+ *    That attribute, not this string, is the machine-readable anchor.
+ *
+ * `timeZone` is a required parameter rather than an ambient
+ * `resolvedOptions().timeZone` read, for the same reason `relativeTime` takes
+ * `now`: a function that reads its environment cannot be tested without
+ * mutating that environment, and CI runs in UTC, where an ambient read is
+ * indistinguishable from a correct one.
+ *
+ * Shape is `YYYY-MM-DD HH:mm ZONE` — sortable and scannable down a table
+ * column, which `01/08/2026` is not.
+ */
+export function exactTimestamp(value: Date, timeZone: string): string {
+  // The UTC fallback belongs HERE, not only at the call sites (review B1).
+  //
+  // `Intl` does not treat `{ timeZone: undefined }` as an error — it treats the
+  // option as absent and silently falls through to the AMBIENT zone. So a
+  // single call site that forgets `?? "UTC"`, or a `string` parameter that is
+  // undefined at runtime despite the type, renders the machine's zone while
+  // claiming to be the UTC fallback. Under a poisoned ambient zone that
+  // surfaces as `GMT+0`, which reads like a deliberate value and is not one.
+  //
+  // Empty string and null take the same path. An unrecognised NON-empty zone is
+  // deliberately left to throw: that is a programming error, and in an audit
+  // register a loud failure beats a plausible-looking wrong time.
+  const requested = timeZone || "UTC";
+  const parts = formatterFor(requested).formatToParts(value);
+  const part = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((candidate) => candidate.type === type)?.value ?? "";
+
+  // `shortOffset` renders UTC as `GMT+0`, and this one case is worth naming
+  // properly. UTC is the fallback every server, no-JS and first-paint render
+  // uses and the zone the whole audit trail is anchored in, so it reads `UTC` —
+  // which, unlike `CST`, is not an abbreviation anyone has to disambiguate.
+  //
+  // Keyed on the requested zone, NOT on the resulting `GMT+0` string: a viewer
+  // in Africa/Abidjan is also at +0 today, and labelling their clock `UTC`
+  // would state something that stops being true the moment any such zone shifts.
+  const zone = requested === "UTC" ? "UTC" : part("timeZoneName");
+
+  return `${part("year")}-${part("month")}-${part("day")} ${part("hour")}:${part("minute")} ${zone}`;
 }

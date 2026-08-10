@@ -8,8 +8,11 @@ import { execSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { AssetEventType, AssetStatus, PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { singleConnectionUrl } from "../../test/session-lock-client";
 import {
   createHolderResolver,
+  IMPORT_ADVISORY_LOCK_KEY,
   importAssetWithEvent,
   withImportLock,
 } from "@/lib/asset-import";
@@ -26,7 +29,9 @@ describe.skipIf(!testDatabaseUrl)("asset import (real DB)", () => {
       env: { ...process.env, DATABASE_URL: testDatabaseUrl },
       stdio: "inherit",
     });
-    db = new PrismaClient({ datasourceUrl: testDatabaseUrl });
+    db = new PrismaClient({
+      datasourceUrl: singleConnectionUrl(testDatabaseUrl),
+    });
     const category = await db.category.create({
       data: { name: `Imported ${randomUUID()}` },
     });
@@ -296,12 +301,66 @@ describe.skipIf(!testDatabaseUrl)("asset import (real DB)", () => {
   });
 
   describe("run lock", () => {
+    /**
+     * The lock is RELEASED, not merely taken (AM-10 review).
+     *
+     * `pg_advisory_lock` is owned by the backend that took it, and Prisma keeps
+     * a client-side pool **even against an unpooled URL** — so the unlock can be
+     * delivered to a different backend. It then returns `false` silently and the
+     * lock survives. `withImportLock`'s `try/finally` is correct and cannot help:
+     * the statement runs, it just runs in the wrong session.
+     *
+     * The consequence is a **deadlock, not a lost mutex** — the lock is
+     * over-held, so the next acquire in the same process blocks forever. That is
+     * why it surfaced as a 20s test timeout plus a 10s `$disconnect()` hook
+     * timeout, intermittently, on CI only, and never once locally.
+     *
+     * This test exists because the fix (`singleConnectionUrl`) had no guard, and
+     * a defect that is invisible where it is caused is protected by nothing but
+     * memory — the same argument that put a test on `test/time-zone.ts`.
+     *
+     * `pg_locks` is CLUSTER-wide, so it sees a leaked lock on whichever backend
+     * holds it, whatever connection asks. A `pg_backend_pid()` equality check
+     * would pass by luck whenever the pool happened to hand back the same
+     * connection. `IMPORT_ADVISORY_LOCK_KEY` is below 2^32, so the single-argument
+     * `bigint` form stores it in `objid` with `objsubid = 1`.
+     *
+     * Red-proven by removing `singleConnectionUrl` from this file's client.
+     */
+    it("leaves no advisory lock behind", async () => {
+      await withImportLock(db, async () => {
+        // Churn the pool inside the locked section. Without the single-connection
+        // pin these open further backends, and the unlock lands on one of them.
+        await Promise.all(
+          Array.from({ length: 40 }, () => db.$queryRaw`SELECT 1`),
+        );
+      });
+
+      const [{ held }] = await db.$queryRaw<{ held: number }[]>`
+        SELECT count(*)::int AS held FROM pg_locks
+        WHERE locktype = 'advisory'
+          AND objid = ${IMPORT_ADVISORY_LOCK_KEY}
+          AND objsubid = 1
+          -- Scoped to THIS database. Cluster-wide visibility is the point of
+          -- using pg_locks at all, but it also makes this the one assertion in
+          -- the suite that can fail because of something it does not own — the
+          -- dev database shares this cluster. Narrowing to the current database
+          -- keeps the leak detection and drops the cross-database noise.
+          AND database = (
+            SELECT oid FROM pg_database WHERE datname = current_database()
+          )`;
+
+      expect(held).toBe(0);
+    });
+
     it("serialises two runs that would otherwise both create one person", async () => {
       // The hazard that REPLACED the deadlock reason for AM-04-CF-A: email is
       // nullable now, so @unique no longer dedupes stub people and two
       // concurrent runs would each find no match and each create a "Jane".
       const name = uniqueName("Concurrent Holder");
-      const other = new PrismaClient({ datasourceUrl: testDatabaseUrl });
+      const other = new PrismaClient({
+        datasourceUrl: singleConnectionUrl(testDatabaseUrl),
+      });
       try {
         const order: string[] = [];
         const runOne = withImportLock(db, async () => {
