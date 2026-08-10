@@ -95,6 +95,24 @@ const config = {
     // Insert-only idempotency, the dry-run rollback, and the cache flags that
     // keep a rolled-back id from reaching the next row.
     "src/lib/import-run.ts",
+
+    // AM-10. Both enforce a rule rather than compute a value, and both shipped
+    // with a guard that did not guard — the C1 zone list stayed green when the
+    // production line it names was reverted, and a `toBeGreaterThan(1)` control
+    // passed against a component ignoring the viewer's zone entirely. Review
+    // caught both; nothing mechanical would have.
+    //
+    // Added here in the delivery that created them, which is the standing rule
+    // (LEARNINGS §Testing, mutation-testing item 5): a scope list does not grow
+    // with the codebase, so the newest guards — the ones least likely to have
+    // been red-proved by hand — are precisely the ones that fall outside it.
+    //
+    // `calendar-date.ts` is the UTC pin for calendar dates: mutating away
+    // `timeZone: "UTC"` must kill a mutant, or a purchase date can shift a day
+    // per viewer. `relative-time.ts` holds the zone label and the UTC fallback
+    // that every server and no-JS render depends on.
+    "src/lib/calendar-date.ts",
+    "src/lib/relative-time.ts",
   ],
 
   vitest: { configFile: "vitest.config.ts" },

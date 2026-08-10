@@ -280,10 +280,16 @@ story does.
   the rewrite for `timestamp → timestamptz` when the session zone is UTC, so
   this is short. Neon's session zone must be **confirmed UTC before running**,
   because that same condition also decides whether the conversion is correct.
-- **Rollback.** Reversible: the inverse `ALTER … TYPE timestamp(3) USING "col" AT
-TIME ZONE 'UTC'` restores the prior type and values exactly. Reverting the PR
-  alone does **not** revert the migration — per LEARNINGS, a deployed migration
-  outlives its commit.
+- **Rollback.** Reversible — the inverse conversion restores the prior type and
+  values exactly:
+
+  ```sql
+  ALTER TABLE … ALTER COLUMN "col" TYPE timestamp(3) USING "col" AT TIME ZONE 'UTC'
+  ```
+
+  Reverting the PR alone does **not** revert the migration — per LEARNINGS, a
+  deployed migration outlives its commit.
+
 - **Destructive changes:** none.
 
 ## 7. Verification plan
