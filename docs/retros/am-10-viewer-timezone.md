@@ -49,11 +49,16 @@ half was investigated, found already correct, and deliberately deferred.
    `$disconnect()` hook timeout. `withImportLock` takes a session-scoped
    `pg_advisory_lock`, and **Prisma keeps a client-side pool even against an
    unpooled URL**, so the unlock can be delivered to a different backend, return
-   `false` silently, and leave the lock held. Measured: `lockPid=15133
-unlockPid=15136 released=false` on a default pool; clean at
-   `connection_limit=1`. It is a deadlock, not a lost mutex — the lock is
-   over-held, so the next acquire in the process blocks forever. A CLI run does
-   one import and exits, which hides it.
+   `false` silently, and leave the lock held. Measured:
+
+   ```
+   default pool        lockPid=15133 unlockPid=15136 released=false  LEAKED
+   connection_limit=1  lockPid=15150 unlockPid=15150 released=true   clean
+   ```
+
+   It is a deadlock, not a lost mutex — the lock is over-held, so the next
+   acquire in the process blocks forever. A CLI run does one import and exits,
+   which hides it.
 
 4. **A test-helper bug I nearly wrote off as a flake.** One full-suite failure
    passed on re-run. `process.env` coerces assigned values to strings, so the
@@ -112,9 +117,10 @@ unlockPid=15136 released=false` on a default pool; clean at
   (`toBeGreaterThan` where an exact count was needed) is verbatim the shape
   responsive-tables already recorded. Adding a tenth restatement would be
   ceremony; extending the mutation scope is the action that changes an outcome.
-- **The vitest sequencer ordering.** Sharpened the existing `fileParallelism:
-false` bullet in place rather than adding one — the mechanism (failed-first,
-  then longest-duration, then largest-file) belongs with the claim it corrects.
+- **The vitest sequencer ordering.** Sharpened the existing
+  `fileParallelism: false` bullet in place rather than adding one — the
+  mechanism (failed-first, then longest-duration, then largest-file) belongs
+  with the claim it corrects.
 - **"Reverse a shipped design decision carefully."** True, feature-specific,
   and already fully recorded in `docs/features/AM-10/DESIGN.md` §5.
 - **The unexplained full-suite failure.** Six-plus clean runs, no reproduction,
