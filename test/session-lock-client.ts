@@ -28,6 +28,15 @@
  * unpooled connection". That is necessary but **not sufficient** — it rules out
  * PgBouncer moving the session, not Prisma's own pool. See the follow-up note
  * in `docs/features/AM-10/DESIGN.md` §8 about `scripts/import-assets.ts`.
+ *
+ * **What the pin COSTS, stated because §8 recommends production adopt it:** with
+ * one connection, any *concurrent* Prisma query inside the locked section queues
+ * behind it and fails with `P2024` once `pool_timeout` (10s) elapses, instead of
+ * running. That is safe for the import as written — it is strictly sequential,
+ * one row at a time — but it is a real constraint and not a free win. Anyone
+ * adding a `Promise.all` inside `withImportLock` will meet it, and the
+ * regression guard in `asset-import.integration.test.ts` deliberately churns the
+ * pool with exactly that shape to keep the behaviour honest.
  */
 /**
  * Accepts `undefined` and passes it through, so call sites keep the
