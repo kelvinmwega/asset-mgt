@@ -121,6 +121,25 @@ report a score computed from tests that never ran.
    registration is the operating organisation's obligation via its own
    counsel.
 
+## GitHub repo protections (manual — part of the configuration record)
+
+Applied 2026-08-15 when the repo went public; restore via `gh api` if the repo
+is ever transferred again (the 2026 transfer silently dropped all protection).
+
+- **Ruleset `main-protection`** (active, no bypass): blocks deletion and
+  force-push on the default branch — for everyone, admins included.
+- **Ruleset `main-ci-gate`** (active, bypass: repository admins): requires a
+  pull request and a passing `ci` status check to reach `main`. The context
+  name must match the CI **job** id (`ci`), not the workflow name. Admin
+  bypass is deliberate: solo-maintainer direct pushes remain possible and are
+  logged as bypasses.
+- **Merges:** squash-only (`PR_TITLE` / `PR_BODY`), head branches auto-deleted.
+- **Security:** secret scanning + push protection enabled, private
+  vulnerability reporting enabled, Dependabot security updates enabled.
+- **Actions:** default `GITHUB_TOKEN` is read-only and cannot approve PRs —
+  every workflow declares its own `permissions:` block, so nothing relies on
+  the write default.
+
 ## Runbook — legacy register cutover (AM-04)
 
 The migration import. **Read this before running it against production**: it
