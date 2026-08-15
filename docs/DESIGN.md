@@ -6,22 +6,22 @@
 
 ## Rendering and deployment mode (stated up front)
 
-**Dynamic SSR** Next.js 15 App Router on **Vercel serverless functions pinned to `fra1`**. This is an authenticated CRUD app — *not* static export. The PWA is a manifest + service worker over the dynamic app, never `output: 'export'`. Every decision below assumes this mode.
+**Dynamic SSR** Next.js 15 App Router on **Vercel serverless functions pinned to `fra1`**. This is an authenticated CRUD app — _not_ static export. The PWA is a manifest + service worker over the dynamic app, never `output: 'export'`. Every decision below assumes this mode.
 
 ## Stack
 
-| Concern | Choice |
-| --- | --- |
-| Hosting | Vercel (Hobby — ToS risk accepted, brief v1.1); prod on `main`, preview per PR |
-| App | Next.js 15 App Router, TypeScript strict; mutations via server actions / route handlers only |
-| Database | Neon Postgres `eu-central-1` via Vercel Marketplace, **pooled connection string** |
-| ORM | Prisma; lazy-init `globalThis` singleton, plain instance (**never a JS Proxy wrapper**) |
-| Auth | Auth.js v5, Resend magic-link (SSO if client IdP materialises); **JWT sessions**; split config — edge-safe `auth.config.ts` for middleware, full `auth.ts` + Prisma adapter for Node |
-| UI | Tailwind v4 (CSS-first, no `tailwind.config.ts`) + shadcn/ui — hand-write `components.json` and `lib/utils.ts` (LEARNINGS §Next.js) |
-| Tests | Vitest + RTL co-located; real-DB integration via local Docker Postgres + GH Actions service container, `skipIf`-on-`TEST_DATABASE_URL`; pin the same Postgres major as the Neon project |
-| Tooling | pnpm (`packageManager` pinned, Node via `engines` + `.nvmrc`), ESLint 9 flat, Prettier, Husky + lint-staged **plus full-repo lint/typecheck in CI** (scope-gap rule), conventional commits |
-| CI | GitHub Actions: lint, typecheck, full test suite (incl. real-DB) as a **required check under branch protection** on `main` |
-| IaC | None (approved deviation). Config as repo artefacts: `vercel.json` pins `fra1`, `.env.example` enumerates every var, README runbook records manual provisioning. The runbook substitutes for state |
+| Concern  | Choice                                                                                                                                                                                                                                                    |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hosting  | Vercel (Hobby — ToS risk accepted, brief v1.1); prod on `main`, preview per PR                                                                                                                                                                            |
+| App      | Next.js 15 App Router, TypeScript strict; mutations via server actions / route handlers only                                                                                                                                                              |
+| Database | Neon Postgres `eu-central-1` via Vercel Marketplace, **pooled connection string**                                                                                                                                                                         |
+| ORM      | Prisma; lazy-init `globalThis` singleton, plain instance (**never a JS Proxy wrapper**)                                                                                                                                                                   |
+| Auth     | Auth.js v5, Resend magic-link (SSO if client IdP materialises); **JWT sessions**; split config — edge-safe `auth.config.ts` for middleware, full `auth.ts` + Prisma adapter for Node                                                                      |
+| UI       | Tailwind v4 (CSS-first, no `tailwind.config.ts`) + shadcn/ui — hand-write `components.json` and `lib/utils.ts` (LEARNINGS §Next.js)                                                                                                                       |
+| Tests    | Vitest + RTL co-located; real-DB integration via local Docker Postgres + GH Actions service container, `skipIf`-on-`TEST_DATABASE_URL`; pin the same Postgres major as the Neon project                                                                   |
+| Tooling  | pnpm (`packageManager` pinned, Node via `engines` + `.nvmrc`), ESLint 9 flat, Prettier, Husky + lint-staged **plus full-repo lint/typecheck in CI** (scope-gap rule), conventional commits                                                                |
+| CI       | GitHub Actions: lint, typecheck, full test suite (incl. real-DB) as a **required check under branch protection** on `main`                                                                                                                                |
+| IaC      | None (approved deviation). Config as repo artefacts: `vercel.json` pins `fra1`, `.env.example` enumerates every var, `docs/RUNBOOK.md` records manual provisioning (moved out of the README when the repo went public). The runbook substitutes for state |
 
 ## Security constraints the skeleton must honour (advisor, T3)
 

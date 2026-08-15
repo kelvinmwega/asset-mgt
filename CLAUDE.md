@@ -10,8 +10,10 @@ ADR: `docs/adr/ADR-001-vercel-neon-stack.md` · Stories: `docs/intake/asset-mgt/
   service worker over the dynamic app.
 - **Deploy target:** Vercel serverless functions pinned to `fra1`
   (`vercel.json`) + Neon Postgres `eu-central-1` via the **pooled** connection
-  string. No Terraform — `vercel.json`, `.env.example`, and the README runbook
-  are the configuration artefacts.
+  string. No Terraform — `vercel.json`, `.env.example`, and the runbooks in
+  `docs/RUNBOOK.md` are the configuration artefacts. (The runbooks lived in
+  the README until the repo went public, 2026-08-15 — the README is now a
+  simple public-facing page and must stay that way.)
 - **Env chokepoint:** `src/lib/env.ts` (`env()`). No `process.env` reads at
   module top level anywhere — `pnpm build` must succeed with zero env
   populated (CI proves this every run). Optional Vercel platform metadata may
