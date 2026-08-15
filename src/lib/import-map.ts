@@ -1,7 +1,7 @@
 import { AssetStatus } from "@prisma/client";
 
 /**
- * THE Asset Tiger row mapper (AM-04 DESIGN §2, §4).
+ * THE legacy-export row mapper (AM-04 DESIGN §2, §4).
  *
  * Takes one parsed spreadsheet row — cells keyed by HEADER NAME, values already
  * resolved to strings and numbers by `import-xlsx.ts` — and produces either a
@@ -28,7 +28,7 @@ import { AssetStatus } from "@prisma/client";
  */
 
 /**
- * The export's 21 columns, in the order Asset Tiger writes them.
+ * The export's 21 columns, in the order the legacy register writes them.
  *
  * Used to VALIDATE the header row, never to address cells — cells are addressed
  * by name because the real file is sparse (columns with no `<c>` element at
@@ -138,11 +138,11 @@ export type MapResult =
   { ok: true; row: MappedRow } | { ok: false; problem: RowProblem };
 
 /**
- * Asset Tiger's status vocabulary → ours.
+ * The legacy register's status vocabulary → ours.
  *
  * A TOTAL lookup with an explicit undefined branch, never a `switch` with a
  * permissive default (advisor condition C15). Only `Available` is evidenced by
- * the client's file; the rest are Asset Tiger's documented vocabulary and must
+ * the client's file; the rest are the legacy register's documented vocabulary and must
  * be confirmed against the full export before cutover (C18).
  *
  * `Lost` / `Missing` / `Stolen` are DELIBERATELY ABSENT and must not be added
@@ -376,7 +376,7 @@ export function mapRow(
  * identical per-row errors is a worse report than one accurate file-level one.
  * Returns the missing headers, empty when the file is good.
  *
- * Extra columns are TOLERATED — Asset Tiger's export options add columns, and
+ * Extra columns are TOLERATED — the legacy register's export options add columns, and
  * rejecting a file for carrying more than we read would be a cutover blocker
  * for no safety gain. Missing ones are not.
  */

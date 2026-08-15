@@ -5,7 +5,7 @@
 
 ## Context
 
-Internal IT asset register: ~400 assets, 3 writers / 70 readers, replacing Asset Tiger before a pricing change. Run cost must be near-zero at idle or the build's economics fail. On 2026-07-28 the client directed deployment on Vercel with a cheaper database than AWS, and accepted the Vercel Hobby commercial-use ToS risk. The studio spine (AWS + Terraform, NestJS when a server is justified, Cognito auth) is deviated from on five axes.
+Internal IT asset register: ~400 assets, 3 writers / 70 readers, replacing a legacy SaaS register before a pricing change. Run cost must be near-zero at idle or the build's economics fail. On 2026-07-28 the client directed deployment on Vercel with a cheaper database than AWS, and accepted the Vercel Hobby commercial-use ToS risk. The studio spine (AWS + Terraform, NestJS when a server is justified, Cognito auth) is deviated from on five axes.
 
 ## Decision
 

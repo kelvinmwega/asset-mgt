@@ -333,7 +333,7 @@ describe.skipIf(!testDatabaseUrl)("import run (real DB)", () => {
     });
 
     // AM-04-C44, and the client's OWN sample row: Status "Available" with a
-    // holder named. Asset Tiger keeps the last assignee after check-in, so the
+    // holder named. The legacy register keeps the last assignee after check-in, so the
     // name is history there and custody here. Opening an assignment would
     // create `strandedOpen` — the second half of the README reconciliation
     // query — which can only ever be closed by fabricating a return.

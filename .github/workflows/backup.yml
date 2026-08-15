@@ -1,6 +1,6 @@
 # Nightly logical backup of the production database (advisor condition,
-# docs/DESIGN.md): Neon free tier's restore window is short, and once Asset
-# Tiger is cancelled this register is the only copy of the data.
+# docs/DESIGN.md): Neon free tier's restore window is short, and once the
+# legacy register is cancelled this register is the only copy of the data.
 #
 # REQUIRED before AM-04 cutover sign-off: the DATABASE_URL repo secret must be
 # configured (Neon connection string) and a green run of this workflow with a

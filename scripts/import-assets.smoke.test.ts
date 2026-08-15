@@ -33,7 +33,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { assetTigerWorkbook, SAMPLE_ROW } from "../test/xlsx-fixture";
+import { legacyExportWorkbook, SAMPLE_ROW } from "../test/xlsx-fixture";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 
@@ -137,7 +137,7 @@ describe.skipIf(!testDatabaseUrl)(
         ...SAMPLE_ROW,
         "Asset Tag ID": `SMOKE-${randomUUID().slice(0, 10)}`,
       };
-      writeFileSync(workbook, Buffer.from(assetTigerWorkbook({ row })));
+      writeFileSync(workbook, Buffer.from(legacyExportWorkbook({ row })));
       db = new PrismaClient({ datasourceUrl: testDatabaseUrl });
     });
 
@@ -240,7 +240,7 @@ describe.skipIf(!testDatabaseUrl)(
       const changed = path.join(path.dirname(workbook), "changed.xlsx");
       writeFileSync(
         changed,
-        Buffer.from(assetTigerWorkbook({ row: { ...row, Cost: "999.99" } })),
+        Buffer.from(legacyExportWorkbook({ row: { ...row, Cost: "999.99" } })),
       );
 
       const run = runCli([changed, "--commit", `--batch=${batchId}`]);

@@ -165,7 +165,7 @@ describe("missingHeaders", () => {
     expect(missingHeaders([...short])).toEqual(["Status"]);
   });
 
-  // Asset Tiger's export options add columns; rejecting a file for carrying
+  // The legacy register's export options add columns; rejecting a file for carrying
   // more than we read would block a cutover for no safety gain.
   it("tolerates extra columns", () => {
     expect(missingHeaders([...EXPECTED_HEADERS, "Warranty"])).toEqual([]);
@@ -214,7 +214,7 @@ describe("mapRow", () => {
     expect(row.siteName).toBe("Nairobi HQ");
   });
 
-  // F-D. Asset Tiger keeps the last assignee after check-in, so the name is a
+  // F-D. The legacy register keeps the last assignee after check-in, so the name is a
   // HISTORY field there and a STATE field here. Carrying it over would put a
   // named person on the hook for kit they returned.
   it("keeps the holder name for a row whose status is not ASSIGNED", () => {

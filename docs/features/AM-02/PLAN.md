@@ -12,7 +12,7 @@ AM-01 shipped identity: seeded staff, magic-link sign-in, four DB-read roles, an
 `Category`, and `Site` exist in `prisma/schema.prisma` as scaffold shapes with no write path.
 
 AM-02 opens that write path. It is the story the rest of Milestone 1 stands on: AM-03 (assignment)
-and AM-04 (the Asset Tiger import that lets the client cancel the subscription) both list AM-02 as
+and AM-04 (the legacy register import that lets the client cancel the subscription) both list AM-02 as
 a hard dependency. The outcome: procurement and IT can record an asset from order through delivery,
 tagging, repair, and retirement, with every change appended to an immutable history — the register
 reflects reality at every stage, and the audit trail can answer "what happened to this laptop"
@@ -186,7 +186,7 @@ the CHECK constraint forcing a data migration over existing rows, or any new aut
 
 ## Out of scope (named, not forgotten)
 
-Assignment and returns (AM-03) · Asset Tiger import (AM-04) · CSV/finance export (AM-05) ·
+Assignment and returns (AM-03) · legacy register import (AM-04) · CSV/finance export (AM-05) ·
 global search (AM-07) · un-retiring via a `CORRECTION` event · asset photos and attachments.
 
 ## Carry-forwards out of AM-02 (surfaced in review, deliberately not fixed here)

@@ -9,8 +9,8 @@
 import { strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import {
-  ASSET_TIGER_HEADERS,
-  assetTigerWorkbook,
+  LEGACY_EXPORT_HEADERS,
+  legacyExportWorkbook,
   buildWorkbook,
   columnLetter,
   compressiblePayload,
@@ -60,9 +60,9 @@ function messageFrom(run: () => unknown): string {
 
 describe("parseAssetWorkbook — the export's real shape (AM-04-C39)", () => {
   it("reads the 21 headers and the single data row, dropping the 187 formatting-only rows", () => {
-    const sheet = parseAssetWorkbook(assetTigerWorkbook());
+    const sheet = parseAssetWorkbook(legacyExportWorkbook());
 
-    expect(sheet.headers).toEqual([...ASSET_TIGER_HEADERS]);
+    expect(sheet.headers).toEqual([...LEGACY_EXPORT_HEADERS]);
     // Exact count, not a floor: the template's trailing rows carry a currency
     // style on D and F and no value anywhere, and emitting them would hand the
     // batch runner 187 spurious quarantines.
@@ -72,7 +72,7 @@ describe("parseAssetWorkbook — the export's real shape (AM-04-C39)", () => {
   });
 
   it("returns raw cell values — the serial as a number, the cost as text", () => {
-    const [row] = parseAssetWorkbook(assetTigerWorkbook()).rows;
+    const [row] = parseAssetWorkbook(legacyExportWorkbook()).rows;
 
     // 45177 is 2023-09-08. Turning it into a Date is the mapper's job, and the
     // reader handing it over as a number is what keeps that decision in one
@@ -88,7 +88,7 @@ describe("parseAssetWorkbook — the export's real shape (AM-04-C39)", () => {
   });
 
   it("omits the four columns with no <c> element rather than inventing empties", () => {
-    const [row] = parseAssetWorkbook(assetTigerWorkbook()).rows;
+    const [row] = parseAssetWorkbook(legacyExportWorkbook()).rows;
 
     for (const absent of ["Brand", "Model", "PID", "Site"]) {
       expect(row.cells).not.toHaveProperty(absent);
@@ -102,7 +102,7 @@ describe("parseAssetWorkbook — the export's real shape (AM-04-C39)", () => {
 
 describe("columns are resolved by header NAME (AM-04-C14)", () => {
   it("keys sparse cells by name, not by their position among the row's <c> elements", () => {
-    const [row] = parseAssetWorkbook(assetTigerWorkbook()).rows;
+    const [row] = parseAssetWorkbook(legacyExportWorkbook()).rows;
 
     // THE misalignment this guard exists for. Serial No is column H, but it is
     // only the SIXTH `<c>` element in the row, because Brand (E) and Model (G)
@@ -114,9 +114,9 @@ describe("columns are resolved by header NAME (AM-04-C14)", () => {
   });
 
   it("does not assume the column order the client's file happens to use", () => {
-    const shuffled = [...ASSET_TIGER_HEADERS].reverse();
+    const shuffled = [...LEGACY_EXPORT_HEADERS].reverse();
     const sheet = parseAssetWorkbook(
-      assetTigerWorkbook({ headerOrder: shuffled }),
+      legacyExportWorkbook({ headerOrder: shuffled }),
     );
 
     expect(sheet.headers).toEqual(shuffled);
@@ -300,7 +300,7 @@ describe("cell types fail closed (AM-04-C37)", () => {
 
 describe("the 1904 date system is refused outright (AM-04-C36)", () => {
   it("rejects the whole file rather than importing every date 1462 days out", () => {
-    expect(() => parseAssetWorkbook(assetTigerMacExport())).toThrow(
+    expect(() => parseAssetWorkbook(legacyMacExport())).toThrow(
       /1904 date system/,
     );
   });
@@ -308,20 +308,20 @@ describe("the 1904 date system is refused outright (AM-04-C36)", () => {
   it('rejects the spelling date1904="true" as well as date1904="1"', () => {
     // Both spellings are legal for an XML boolean, and a producer that writes
     // the word rather than the digit must not slip past.
-    expect(() => parseAssetWorkbook(assetTigerMacExport("true"))).toThrow(
+    expect(() => parseAssetWorkbook(legacyMacExport("true"))).toThrow(
       /1904 date system/,
     );
   });
 
   it.each([["0"], ["false"]])('accepts an explicit date1904="%s"', (flag) => {
-    expect(parseAssetWorkbook(assetTigerMacExport(flag)).rows).toHaveLength(1);
+    expect(parseAssetWorkbook(legacyMacExport(flag)).rows).toHaveLength(1);
   });
 
   it("accepts the same workbook with no flag at all", () => {
-    expect(parseAssetWorkbook(assetTigerWorkbook()).rows).toHaveLength(1);
+    expect(parseAssetWorkbook(legacyExportWorkbook()).rows).toHaveLength(1);
   });
 
-  function assetTigerMacExport(flag: boolean | string = true): Uint8Array {
+  function legacyMacExport(flag: boolean | string = true): Uint8Array {
     return buildWorkbook({
       date1904: flag,
       rows: [
@@ -402,7 +402,7 @@ describe("zip caps (AM-04-C34)", () => {
   });
 
   it("refuses an oversized input before inflating anything", () => {
-    const workbook = assetTigerWorkbook({ trailingRows: 0 });
+    const workbook = legacyExportWorkbook({ trailingRows: 0 });
 
     expect(() =>
       parseAssetWorkbook(workbook, { maxInputBytes: workbook.length - 1 }),
@@ -597,7 +597,7 @@ describe("zip caps (AM-04-C34)", () => {
 
 describe("package metadata is never read or surfaced (AM-04-C38)", () => {
   it("returns nothing from docProps or the workbook's absPath", () => {
-    const sheet = parseAssetWorkbook(assetTigerWorkbook());
+    const sheet = parseAssetWorkbook(legacyExportWorkbook());
     const serialised = JSON.stringify(sheet);
 
     // The fixture carries both, in the shapes the real export carries them:
@@ -1012,7 +1012,7 @@ describe("malformed packages are refused with a diagnosable message", () => {
     // Cut in half so the worksheet entry itself is incomplete. Trimming only
     // the tail proves nothing: the four parts this reader wants all sit before
     // docProps, so a file missing its last few hundred bytes still parses.
-    const workbook = assetTigerWorkbook({ trailingRows: 0 });
+    const workbook = legacyExportWorkbook({ trailingRows: 0 });
 
     expect(() =>
       parseAssetWorkbook(workbook.subarray(0, Math.floor(workbook.length / 2))),
@@ -1022,7 +1022,7 @@ describe("malformed packages are refused with a diagnosable message", () => {
   it("reads an archive whose length is an exact multiple of the push chunk", () => {
     // The push loop's bound is only interesting when the last chunk lands
     // exactly on the end of the archive; every other fixture overshoots.
-    const workbook = assetTigerWorkbook({ trailingRows: 0 });
+    const workbook = legacyExportWorkbook({ trailingRows: 0 });
 
     expect(
       parseAssetWorkbook(workbook, { pushChunkBytes: workbook.length }).rows,

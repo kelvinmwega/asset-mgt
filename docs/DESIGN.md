@@ -34,7 +34,7 @@
 
 ## Conditions attached by the advisor
 
-- **Backup independence:** nightly logical backup (GitHub Actions cron `pg_dump` to artefact/client-held storage) must exist **before AM-04 cutover sign-off** — Neon free tier's restore window is short and this becomes the sole register when Asset Tiger is cancelled.
+- **Backup independence:** nightly logical backup (GitHub Actions cron `pg_dump` to artefact/client-held storage) must exist **before AM-04 cutover sign-off** — Neon free tier's restore window is short and this becomes the sole register when the legacy register is cancelled.
 - **Kenya DPA transfer note** (ss. 48–49) written at scaffold: staff PII processed in the EU is a cross-border transfer. ODPC data-controller registration is the client's obligation — flag to their counsel.
 - **Resend sending domain** must be verified before magic links can reach staff inboxes (free-tier default sender only reaches the account owner) — provisioning runbook step.
 

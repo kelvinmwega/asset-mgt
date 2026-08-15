@@ -131,8 +131,8 @@ export function assetSearchWhere(q: string): Prisma.AssetWhereInput {
       { serial: { contains, mode: "insensitive" } },
       { make: { contains, mode: "insensitive" } },
       { model: { contains, mode: "insensitive" } },
-      // AM-04. WITHOUT THIS BRANCH `?q=` SILENTLY DIES AT CUTOVER: the Asset
-      // Tiger export leaves Brand and Model blank on every row, so an imported
+      // AM-04. WITHOUT THIS BRANCH `?q=` SILENTLY DIES AT CUTOVER: the legacy
+      // export leaves Brand and Model blank on every row, so an imported
       // register of ~400 assets would be searchable by tag and serial and by
       // nothing a human remembers. `description` is the only name those rows
       // have.

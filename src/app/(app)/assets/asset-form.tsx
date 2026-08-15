@@ -140,7 +140,7 @@ export function AssetForm({
         </div>
       </div>
 
-      {/* Optional here, and the only name an IMPORTED asset has: Asset Tiger's
+      {/* Optional here, and the only name an IMPORTED asset has: the legacy
           export leaves Brand and Model blank and carries the whole description
           in one cell. Sits under make/model because for a hand-typed asset it
           is the elaboration, and above serial because it is what a reader
@@ -212,7 +212,7 @@ export function AssetForm({
         </div>
       </div>
 
-      {/* The procurement and finance handles from the Asset Tiger export
+      {/* The procurement and finance handles from the legacy export
           (AM-04). Paired the way they are read: a PO number and a cost centre
           answer "what did we buy this against", a department and a location
           answer "where did it go". */}

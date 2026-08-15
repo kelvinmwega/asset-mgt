@@ -46,7 +46,7 @@ yarn-error.log*
 # may ever be committed
 seed-data/
 
-# real client exports (Kenya DPA). The Asset Tiger export carries staff names,
+# real client exports (Kenya DPA). The legacy export carries staff names,
 # serials, PO numbers and cost centres — it is the client's live asset data and
 # must never enter git history, where it cannot be un-committed. Unlike
 # seed-data/ these land in docs/, a committed directory, so a stray

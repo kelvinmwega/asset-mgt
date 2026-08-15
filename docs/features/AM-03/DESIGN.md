@@ -388,7 +388,7 @@ extends to both).
 
 ## 8. Carry-forwards
 
-- **AM-03-CF-1 — Person admin.** AM-04 may force this: if the Asset Tiger export names
+- **AM-03-CF-1 — Person admin.** AM-04 may force this: if the legacy export names
   assignees who are not seeded staff, someone must create them, and "reported, never silently
   dropped" then means AM-04 needs the screen.
 - **AM-03-CF-2 — Leaver open assignments.** No enforcement, by design (§4.5). Natural home is

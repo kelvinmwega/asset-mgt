@@ -1,6 +1,6 @@
 # CLAUDE.md — asset-mgt
 
-Internal IT asset register (replaces Asset Tiger). Design: `docs/DESIGN.md` ·
+Self-hosted IT asset register (replaced a legacy SaaS register). Design: `docs/DESIGN.md` ·
 ADR: `docs/adr/ADR-001-vercel-neon-stack.md` · Stories: `docs/intake/asset-mgt/PRD.md`.
 
 ## Non-negotiables
@@ -114,7 +114,7 @@ ADR: `docs/adr/ADR-001-vercel-neon-stack.md` · Stories: `docs/intake/asset-mgt/
   actions, seed). A case mismatch silently locks staff out.
 - **`Person.email` is optional, and no synthesized address is ever written.**
   A holder is not necessarily a system user — login identity is `User.email`,
-  which stays required and unique. The Asset Tiger export (AM-04) has no email
+  which stays required and unique. The legacy export (AM-04) has no email
   column, so imported holders are created with `email: null`. A placeholder or
   `@…invalid` address is forbidden: it fabricates a personal datum, and two
   same-named people either collide on a confusing P2002 or **merge into one

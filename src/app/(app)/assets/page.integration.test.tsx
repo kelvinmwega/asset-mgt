@@ -858,7 +858,7 @@ describe.skipIf(!testDatabaseUrl)("asset register page (real DB)", () => {
         }),
         // AM-04's imported shape, and the POSITIVE CONTROL for the notes test
         // below (advisor condition AM-04-C25). Make and model are NULL exactly
-        // as the client's Asset Tiger rows arrive, and the whole identity is in
+        // as the imported legacy rows arrive, and the whole identity is in
         // `description` — which carries the SAME nonce as the event note. That
         // pairing is the point: without it, "searching the nonce returns
         // nothing" would pass just as well if the search were broken outright,
@@ -1076,7 +1076,7 @@ describe.skipIf(!testDatabaseUrl)("asset register page (real DB)", () => {
     });
 
     it("finds an imported asset by description, with no make or model", async () => {
-      // AM-04-C25 head-on. Every row in the client's Asset Tiger export has a
+      // AM-04-C25 head-on. Every row in the client's legacy export has a
       // blank Brand and Model, so without a `description` branch a register of
       // ~400 imported assets would be searchable by tag and serial and by
       // nothing a human actually remembers about the kit.

@@ -1,4 +1,4 @@
-// Asset Tiger import CLI — the AM-04 cutover tool.
+// Legacy register import CLI — the AM-04 cutover tool.
 //
 // Run as `pnpm db:import <file.xlsx>` for a DRY RUN, and
 // `pnpm db:import <file.xlsx> --commit --batch=<id>` to write.
@@ -139,7 +139,7 @@ export function formatReport(result: DryRunResult, commit: boolean): string {
   lines.push(
     `  matched ${report.holders.matched}   created ${report.holders.created}   ambiguous ${report.holders.ambiguous}`,
   );
-  // Never silently dropped (the AC). Asset Tiger keeps the last assignee after
+  // Never silently dropped (the AC). The legacy register keeps the last assignee after
   // check-in, so a name on a row that is not "Checked Out" is history, not
   // custody — carrying it over would put a named person on the hook for kit
   // they returned. Row numbers, not names: the operator looks these up in

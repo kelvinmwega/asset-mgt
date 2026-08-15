@@ -82,7 +82,7 @@ export type ImportReport = {
     ambiguous: number;
     /**
      * Rows whose `Assigned to` names someone but whose STATUS is not ASSIGNED —
-     * the client's own sample row. Asset Tiger keeps the last assignee after
+     * the client's own sample row. The legacy register keeps the last assignee after
      * check-in, so the name is history there and state here; carrying it over
      * would fabricate a current assignment and put a named person on the hook
      * for kit they returned. Counted and reported rather than silently dropped

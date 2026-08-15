@@ -63,7 +63,7 @@ model Asset {
   tag           String?         @unique
   categoryId    String
   category      Category        @relation(fields: [categoryId], references: [id])
-  // Nullable since AM-04: the client's Asset Tiger export leaves Brand and
+  // Nullable since AM-04: the client's legacy export leaves Brand and
   // Model blank on real rows and carries the whole of what an asset IS in
   // `description`. Deriving make from the description works for "HP …" and
   // INVENTS a manufacturer for everything else, unrecoverably; rejecting
@@ -75,7 +75,7 @@ model Asset {
   // (src/lib/asset-display.ts): make+model → else description → else tag.
   make          String?
   model         String?
-  // The Asset Tiger identity line, and the only populated name on an imported
+  // The legacy export's identity line, and the only populated name on an imported
   // row. Searchable (src/lib/asset-search.ts) — without it `?q=` silently dies
   // at cutover, because make and model are blank on every imported asset.
   description   String?
@@ -122,7 +122,7 @@ model Person {
   // identity is User.email, which stays required and unique. The schema already
   // agreed everywhere else — `user` is optional, and assertPersonAssignable
   // documents that a person with no User is fully assignable (contractors,
-  // staff without logins). The Asset Tiger export has no email column at all,
+  // staff without logins). The legacy export has no email column at all,
   // so under the old shape an imported holder could not be created.
   //
   // NO SYNTHESIZED ADDRESS, EVER — no placeholder, no @…invalid (AM-04-C2). It

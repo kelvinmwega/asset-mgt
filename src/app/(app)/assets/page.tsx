@@ -204,7 +204,7 @@ const filterSchema = z.object({
 /**
  * Rows per page.
  *
- * The client's Asset Tiger export is ~400 assets, so 50 is eight pages of a
+ * The client's legacy export is ~400 assets, so 50 is eight pages of a
  * register someone scans rather than reads — enough that paging is rare, few
  * enough that the page stays a page (issue #8 measured 402 rows as 15,965px
  * of scroll and 10,481 DOM nodes).

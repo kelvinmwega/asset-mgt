@@ -2,7 +2,7 @@
  * THE asset display-name precedence (AM-04 DESIGN §3, advisor condition C3).
  *
  * Every surface that names an asset calls this. It exists because AM-04 made
- * `make` and `model` nullable — the client's Asset Tiger export leaves Brand
+ * `make` and `model` nullable — the client's legacy export leaves Brand
  * and Model blank on real rows and carries the whole of what an asset IS in
  * `description` — and seven separate call sites were rendering `{make} {model}`
  * directly. After the import, all seven would have rendered an empty string:

@@ -6,7 +6,7 @@
 
 ## Stack
 
-- **Application:** Next.js 15 (App Router, TypeScript) as a single full-stack app — server actions/route handlers for mutations. A separate NestJS service is *not* justified at 3 writers / 70 readers doing CRUD and reports; introduce one only if the Oracle integration later demands long-running jobs.
+- **Application:** Next.js 15 (App Router, TypeScript) as a single full-stack app — server actions/route handlers for mutations. A separate NestJS service is _not_ justified at 3 writers / 70 readers doing CRUD and reports; introduce one only if the Oracle integration later demands long-running jobs.
 - **Data:** PostgreSQL (Neon) + Prisma.
 - **UI:** Tailwind CSS v4 + shadcn/ui; mobile-first layouts for the flows field workers touch (lookup, assign, return).
 - **Auth:** Auth.js — provider depends on the client's IdP (open assumption 4 in the brief): org SSO if Google Workspace/M365 exists, otherwise email magic-link via Resend (first-class Auth.js provider). Role claims: `ADMIN_IT`, `PROCUREMENT`, `FINANCE`, `STAFF_RO`.
@@ -31,14 +31,14 @@ ImportBatch id, source, runAt, dryRun, rowsOk, rowsFailed, report
 
 ## Integration points
 
-1. **Asset Tiger import** — client holds a backup/export; schema unknown until inspected (week 1). Import harness: dry-run with row-level error report, idempotent re-runs, reconciliation against Asset Tiger totals.
+1. **Legacy register import** — client holds a backup/export; schema unknown until inspected (week 1). Import harness: dry-run with row-level error report, idempotent re-runs, reconciliation against the legacy register's totals.
 2. **Finance export** — v1 is a CSV/report export whose columns are agreed with the finance user in week 1. The client's Oracle product is unidentified; direct API integration is post-MVP.
 3. **Org IdP** — TBC; determines Auth.js provider.
 4. **Resend** — auth email (and post-MVP alerts); free tier is 3,000 emails/month against ~70 staff logins.
 
 ## Risky decisions
 
-1. **Hosting: Vercel Hobby's non-commercial-use term.** The build's economics only hold if idle cost is near zero. Vercel Hobby + Neon Free + Resend Free deliver $0/month — but Hobby's terms prohibit commercial use, and an internal tool for a client organisation arguably qualifies. **Risk accepted and named (client decision, 2026-07-28):** run on Hobby. If Vercel objects, the mitigation is Pro at $20/month/seat — which puts run cost at rough parity with the Asset Tiger subscription being escaped and reduces the build case to ownership + workflow fit alone. **ADR at scaffold.**
+1. **Hosting: Vercel Hobby's non-commercial-use term.** The build's economics only hold if idle cost is near zero. Vercel Hobby + Neon Free + Resend Free deliver $0/month — but Hobby's terms prohibit commercial use, and an internal tool for a client organisation arguably qualifies. **Risk accepted and named (client decision, 2026-07-28):** run on Hobby. If Vercel objects, the mitigation is Pro at $20/month/seat — which puts run cost at rough parity with the legacy subscription being escaped and reduces the build case to ownership + workflow fit alone. **ADR at scaffold.**
 2. **Auth and identity.** Provider choice (SSO vs magic-link) and the decision to store `employeeRef` rather than national ID. Security-touching → **floors at Tier 3, advisor review mandatory** (studio rule).
 3. **Finance "integration" as an export contract.** Building against an unidentified Oracle product would be speculation; v1 ships a stable, versioned export whose shape finance signs off. Risk accepted and named in the brief; direct integration is a post-MVP story once the product is identified.
 

@@ -57,7 +57,7 @@ Nothing about sign-in activity is written to the append-only `UserEvent`
 table, where it would be permanently uncorrectable and unerasable.
 Engineering change of 2026-08-02 (issue #11); no legal review is implied.
 
-**Data subjects widen at the Asset Tiger migration (AM-04).** Recorded here
+**Data subjects widen at the legacy register migration (AM-04).** Recorded here
 because the trigger clause below fires — **not** because the fields, the
 purpose, the location or the processors change. They do not: this is the same
 `Person` record, in the same database, for the same purpose. What changes is

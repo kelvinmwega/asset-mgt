@@ -1,9 +1,8 @@
-# AM-04 — Asset Tiger migration import — DESIGN
+# AM-04 — Legacy register migration import — DESIGN
 
 - **Tier:** T3 (raised from the PRD's T2)
 - **Story:** `docs/intake/asset-mgt/PRD.md` §AM-04
-- **Source file:** the client's Asset Tiger export (kept out of the repo — §10)
-- **Branch:** `feat/am-04-tiger-import`
+- **Source file:** the client's legacy export (kept out of the repo — §10)
 - **Advisor ruling:** **PASS WITH CONDITIONS**, `AM-04-C1`…`C40` (§9), 2026-08-07
 
 **Why T3, when the PRD says T2.** The PRD scoped AM-04 as "read the export,
@@ -19,7 +18,7 @@ write the assets". The actual file adds two things on CLAUDE.md's T3 floor:
 
 ## 1. What the export actually is
 
-Not a data dump — an **Asset Tiger export template**: 1 header row, **21
+Not a data dump — an **legacy export template**: 1 header row, **21
 columns**, **1 example data row**, 187 blank rows carrying only formatting.
 
 The field _names_ are authoritative; the field _vocabulary_ is a sample of one.
@@ -76,7 +75,7 @@ makes the _second_ blank-tagged row report a phantom duplicate
 (`src/lib/asset-admin.integration.test.ts:458`).
 
 **F-D — The row contradicts itself.** `Status` is `Available` (nobody holds it)
-while `Assigned to` names a person. Asset Tiger retains the last assignee after
+while `Assigned to` names a person. The legacy register retains the last assignee after
 check-in: it is a _history_ field there and a _state_ field here.
 
 **F-E — Cells are sparse.** Columns E, G, I and N have **no `<c>` element**.

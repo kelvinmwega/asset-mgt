@@ -1,7 +1,7 @@
 // Synthetic .xlsx workbooks for the AM-04 parser tests (advisor condition
 // AM-04-C39).
 //
-// EVERY VALUE HERE IS INVENTED. The client's real Asset Tiger export carries
+// EVERY VALUE HERE IS INVENTED. The client's real legacy export carries
 // three staff names, a serial, a PO number and a cost centre, and `.gitignore`
 // blocks `*.xlsx`/`*.xls`/`*.csv` repo-wide so it can never be committed as a
 // fixture. Building the workbook in code instead is not a workaround for that
@@ -10,7 +10,7 @@
 //
 // The shapes ARE the point. A tidy workbook proves nothing about a file whose
 // sparse cells, text-in-a-money-column and two different date encodings are the
-// whole reason this reader is hand-written. `assetTigerWorkbook()` reproduces
+// whole reason this reader is hand-written. `legacyExportWorkbook()` reproduces
 // them, cell type by cell type, from the design's §1.1 table.
 
 import { zipSync, strToU8 } from "fflate";
@@ -187,13 +187,13 @@ export function buildWorkbook(spec: WorkbookSpec = {}): Uint8Array {
 }
 
 /**
- * The 21 columns of the Asset Tiger export template, in the file's own order.
+ * The 21 columns of the legacy export template, in the file's own order.
  *
  * The reader resolves columns by NAME, so this order is a fact about the client
  * file rather than an assumption the code makes — `shuffled()` below exists to
  * hold that distinction honest.
  */
-export const ASSET_TIGER_HEADERS = [
+export const LEGACY_EXPORT_HEADERS = [
   "Asset Tag ID",
   "Description",
   "Purchased from",
@@ -258,14 +258,14 @@ export function columnLetter(index: number): string {
  * `headerOrder` is a parameter so a test can shuffle the columns and assert the
  * same values come back under the same names.
  */
-export function assetTigerWorkbook(
+export function legacyExportWorkbook(
   options: {
     headerOrder?: readonly string[];
     row?: Record<string, string | number>;
     trailingRows?: number;
   } = {},
 ): Uint8Array {
-  const headers = options.headerOrder ?? ASSET_TIGER_HEADERS;
+  const headers = options.headerOrder ?? LEGACY_EXPORT_HEADERS;
   const values = options.row ?? SAMPLE_ROW;
   const trailingRows = options.trailingRows ?? 187;
 

@@ -1,4 +1,4 @@
-// AM-04 — the Asset Tiger XLSX reader.
+// AM-04 — the legacy-export XLSX reader.
 //
 // Takes the bytes of an .xlsx and returns ONE sheet's cells, keyed by header
 // NAME. Nothing else: no dates, no decimals, no status vocabulary, no database.
@@ -465,7 +465,7 @@ function resolveSheetEntry(workbookXml: string, relsXml: string): string {
   const sheets = [...scanElements(sheetsBody, "sheet")];
   if (sheets.length !== 1) {
     throw new Error(
-      `Import file holds ${sheets.length} sheets — the Asset Tiger export has ` +
+      `Import file holds ${sheets.length} sheets — the legacy export has ` +
         // Stryker disable next-line StringLiteral: explanatory half of the message; the test pins the identifying fragment
         `exactly one, and this reader will not guess which to import.`,
     );
@@ -558,7 +558,7 @@ function columnIndexOf(cellRef: string | undefined, rowNumber: number): number {
  *
  * AM-04-C37 — the type allowlist, and it is an ALLOWLIST with an explicit
  * throw, not a switch with a permissive default. `t="s"` and a bare numeric are
- * everything the Asset Tiger export produces; `inlineStr`, `str`, `b`, `e` and
+ * everything the legacy export produces; `inlineStr`, `str`, `b`, `e` and
  * `n` all reach here as a named, refused type.
  *
  * The failure this shape exists to prevent is not a crash, it is silence:
@@ -731,7 +731,7 @@ function parseSheet(sheetXml: string, sharedStrings: string[]): ParsedSheet {
 // ---------------------------------------------------------------------------
 
 /**
- * Read the one sheet out of an Asset Tiger .xlsx export.
+ * Read the one sheet out of a legacy .xlsx export.
  *
  * Throws on every guard violation — there is no partial success here. Row-level
  * tolerance (quarantine one row, import the other 399) belongs to the mapper
