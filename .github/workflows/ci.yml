@@ -44,3 +44,11 @@ jobs:
       # Build runs with no app env populated — this is the standing proof of
       # the lazy-env rule (build must succeed with nothing configured).
       - run: pnpm build
+      # Must follow the build: this probes the COMPILED middleware matcher in
+      # .next/server/middleware-manifest.json, which does not exist at
+      # `pnpm test` time. It is the negative control on the public-route gate —
+      # brute-forcing the short path space to prove `/` is the only path that
+      # bypasses authentication. Catches what a source-level assertion cannot:
+      # a basePath being added, or Next changing how it compiles matchers.
+      # T3 advisor condition 7, 2026-08-30.
+      - run: pnpm matcher:probe

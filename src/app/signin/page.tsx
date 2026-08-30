@@ -20,12 +20,20 @@ export default async function SignInPage({
 }) {
   const { sent, error } = await searchParams;
 
-  // Deliberately NOT a bare session check: src/app/page.tsx redirects a
-  // deactivated user holding a still-valid JWT here, so `session → redirect("/")`
-  // would ping-pong that user until the browser gives up — locking out exactly
-  // the leavers the kill-switch targets. Status is DB-read for the same reason
-  // requireRole reads it, and only when a session exists: the anonymous path
-  // (the one exposed to unauthenticated traffic) touches no database.
+  // Deliberately NOT a bare session check. A deactivated user holding a
+  // still-valid JWT is bounced here by the (app) layout's `requireRole` —
+  // which is what rejects them, on every gated route — so a bare
+  // `session → redirect(…)` would ping-pong that user until the browser gives
+  // up, locking out exactly the leavers the kill-switch targets.
+  //
+  // This rationale previously named src/app/page.tsx as the redirector. That
+  // was true when `/` lived inside the (app) group; `/` is now the public
+  // landing page and redirects nobody. The guard is unchanged and still
+  // required — only the mechanism that makes it necessary is named correctly.
+  //
+  // Status is DB-read for the same reason requireRole reads it, and only when
+  // a session exists: the anonymous path (the one exposed to unauthenticated
+  // traffic) touches no database.
   const session = await auth();
   if (session?.user?.id) {
     const user = await getDb().user.findUnique({
@@ -33,7 +41,11 @@ export default async function SignInPage({
       select: { deactivatedAt: true },
     });
     if (user && user.deactivatedAt === null) {
-      redirect("/");
+      // /assets, not "/". Since `/` became the public landing page, sending an
+      // active signed-in user there drops them on marketing copy after a
+      // successful magic link — which reads as "sign-in is broken". The
+      // register is where a completed sign-in belongs.
+      redirect("/assets");
     }
   }
 

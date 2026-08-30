@@ -6,3 +6,6 @@ coverage
 pnpm-lock.yaml
 next-env.d.ts
 prisma/migrations
+
+# Verbatim FSF licence text — reformatting a legal document is not ours to do
+LICENSE

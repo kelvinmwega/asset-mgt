@@ -91,10 +91,13 @@ describe.skipIf(!testDatabaseUrl)("signin page session guard (real DB)", () => {
     });
     mockAuth.mockResolvedValue({ user: { id: user.id } });
 
-    await expect(redirectTargetOf(render())).resolves.toBe("/");
+    // /assets, not "/". `/` became the public landing page when the
+    // adopter-facing site shipped; sending a completed sign-in there drops the
+    // user on marketing copy, which reads as a broken magic link.
+    await expect(redirectTargetOf(render())).resolves.toBe("/assets");
   });
 
-  it("renders the form for a deactivated user rather than looping back to /", async () => {
+  it("renders the form for a deactivated user rather than looping back to /assets", async () => {
     const user = await db.user.create({
       data: {
         email: `signin-${randomUUID()}@example.com`,
