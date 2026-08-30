@@ -71,6 +71,13 @@ The interesting decisions live in [`docs/`](docs/):
 - [Runbooks](docs/RUNBOOK.md) — provisioning, the import cutover, data
   integrity checks, and recovering a failed migration
 
+## Licence
+
+[GNU Affero General Public License v3.0](LICENSE). Fork it, run it, change it.
+If you host a modified version where other people can use it over a network,
+AGPL section 13 asks you to offer those users your source — the app's footer
+links back here, which is the simplest way to do that.
+
 ---
 
 Built by [Kelvin Mwega](https://github.com/kelvinmwega).

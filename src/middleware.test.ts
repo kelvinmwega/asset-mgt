@@ -110,3 +110,110 @@ describe("edge source shape", () => {
     expect(source).not.toMatch(/["']server-only["']/);
   });
 });
+
+/**
+ * The public-route matcher (adopter-facing landing page, `/`).
+ *
+ * These execute the matcher rather than grepping it, for the reason the
+ * docblock above gives: a source assertion closes the spelling it was shown,
+ * not the class. Compiling the pattern and running paths through it means any
+ * future rewrite — a different quantifier, an added alternation branch, a
+ * reordered lookahead — is judged on what it actually gates.
+ *
+ * `config.matcher` is read from the real module export, not retyped here, so
+ * the test cannot drift from the middleware it defends.
+ *
+ * Approximation, stated: Next compiles matcher strings with path-to-regexp.
+ * This pattern is raw regex apart from the leading slash, so `^…$` is faithful
+ * for the quantifier semantics under test. What this does NOT prove is that
+ * the deployed edge runtime applies the matcher identically — only a request
+ * against a preview deployment shows that.
+ */
+describe("public matcher", () => {
+  // The matcher is read out of the source rather than imported: importing
+  // middleware.ts pulls next-auth's edge entrypoint into the node test
+  // environment and the suite dies on a module resolution error before a
+  // single assertion runs. Extracting the literal keeps the assertions
+  // behavioural — the pattern below is compiled and executed, not grepped —
+  // and the extraction itself is asserted, so a refactor that moves or
+  // multiplies the matcher fails loudly instead of quietly testing nothing.
+  const matcherRegex = () => {
+    const source = readFileSync(
+      path.resolve(import.meta.dirname, "middleware.ts"),
+      "utf8",
+    )
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\/\/.*$/gm, "");
+
+    const block = source.match(/matcher:\s*\[([\s\S]*?)\]/);
+    expect(
+      block,
+      "middleware.ts no longer declares matcher: [...]",
+    ).not.toBeNull();
+
+    const literals = [...block![1].matchAll(/"(?:[^"\\]|\\.)*"/g)].map(
+      (match) => JSON.parse(match[0]) as string,
+    );
+    expect(literals).toHaveLength(1);
+
+    return new RegExp(`^${literals[0]}$`);
+  };
+
+  // Gated means "middleware runs on it". The middleware only authenticates;
+  // requireRole in each page and action is what authorises. A route dropping
+  // off this list is a route that lost its session gate.
+  const GATED = [
+    "/assets",
+    "/assets/new",
+    "/assets/cmxyz123",
+    "/admin/users",
+    "/admin/reference",
+    "/me/assignments",
+    "/people/cmxyz123",
+    "/health",
+    // Single character: the boundary case the `.+` quantifier turns on. If a
+    // future rewrite opens the root by trimming a character rather than by
+    // requiring one, this is the assertion that catches it.
+    "/a",
+    // The anchoring the advisor conditioned on, still holding.
+    "/signin-foo",
+    "/signinfoo",
+    "/api/auth-foo",
+    "/api/other",
+  ];
+
+  const PUBLIC = [
+    "/signin",
+    "/signin/",
+    "/api/auth",
+    "/api/auth/session",
+    "/api/auth/callback/resend",
+    "/_next/static/chunks/main.js",
+    "/_next/image",
+    "/favicon.ico",
+  ];
+
+  it("leaves the root public", () => {
+    // Red-proved: reverting the quantifier to `.*` matches "" here and this
+    // fails, which is the whole change in one assertion.
+    expect(matcherRegex().test("/")).toBe(false);
+  });
+
+  it.each(GATED)("gates %s", (route) => {
+    expect(matcherRegex().test(route)).toBe(true);
+  });
+
+  it.each(PUBLIC)("exempts %s", (route) => {
+    expect(matcherRegex().test(route)).toBe(false);
+  });
+
+  it("opens exactly one path and no more", () => {
+    // The class-closing assertion. Opening the root by widening the
+    // alternation — the tempting fix — tends to open a subtree with it; any
+    // such change makes some GATED entry fall through and fails here as well
+    // as above. Kept separate so the failure message names the count.
+    const regex = matcherRegex();
+    const opened = [...GATED, "/"].filter((route) => !regex.test(route));
+    expect(opened).toEqual(["/"]);
+  });
+});

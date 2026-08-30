@@ -74,6 +74,23 @@ seed-data/
 # developer's setup, never repo content
 .claude/
 
+# design-tool and browser-automation output. Same failure class as the export
+# rule above, and it is worth stating plainly: these tools write whatever is on
+# screen, and local browser checks against this app run with a real session
+# cookie — so one capture can carry live register data, holder names included,
+# into what is now a PUBLIC repo. Nothing here is reviewed before it lands.
+#
+# Surface briefs are the exception: hand-written text, no capture, and
+# src/app/page.tsx points at one. Re-including the directory (not just its
+# contents) is what makes the negation work under an excluded parent.
+.impeccable/*
+!.impeccable/surfaces/
+.playwright-mcp/
+
+# Root-level screenshots. Real assets belong in public/ or docs/, so anchoring
+# to the repo root costs nothing and catches the capture tools' default dump.
+/*.png
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
