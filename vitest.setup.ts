@@ -36,3 +36,25 @@ class ResizeObserverStub implements ResizeObserver {
 if (typeof globalThis.ResizeObserver === "undefined") {
   globalThis.ResizeObserver = ResizeObserverStub;
 }
+
+// why: Radix and cmdk call pointer capture and scrollIntoView, absent from jsdom (testing/harness-repeat-offenders)
+if (typeof Element !== "undefined") {
+  Element.prototype.hasPointerCapture ??= () => false;
+  Element.prototype.setPointerCapture ??= () => {};
+  Element.prototype.releasePointerCapture ??= () => {};
+  Element.prototype.scrollIntoView ??= () => {};
+}
+
+// why: jsdom has no matchMedia; "no match" is the Combobox's desktop answer (testing/harness-repeat-offenders)
+if (typeof window !== "undefined" && !window.matchMedia) {
+  window.matchMedia = (query: string): MediaQueryList => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  });
+}
