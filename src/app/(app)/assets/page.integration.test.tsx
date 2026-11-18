@@ -262,6 +262,30 @@ describe.skipIf(!testDatabaseUrl)("asset register page (real DB)", () => {
     expect(html).not.toContain(`/assets/${onOrderId}`);
   });
 
+  it('offers "Any category" and "Any site" as in-app filters that post an empty value (G1, G2, G5, G15)', async () => {
+    await signInAs(Role.STAFF_RO);
+
+    const html = await renderRegister({ siteId });
+
+    // why: Radix server-renders a nameless aria-hidden <select> beside each trigger; only a visible, named one breaks G1
+    for (const tag of html.match(/<select[^>]*>/g) ?? []) {
+      expect(tag).toContain('aria-hidden="true"');
+      expect(tag).toContain('tabindex="-1"');
+      expect(tag).not.toMatch(/\bname=/);
+    }
+    expect(html).toContain(">Any category<");
+    expect(html).not.toContain(">All<");
+    expect(html).toContain('name="categoryId" value=""');
+    expect(html).toContain(`name="siteId" value="${siteId}"`);
+    expect(html.split('name="categoryId"').length - 1).toBe(1);
+    expect(html.split('name="siteId"').length - 1).toBe(1);
+
+    const byCategory = await renderRegister({ categoryId });
+    expect(byCategory).toContain(">Any site<");
+    expect(byCategory).toContain('name="siteId" value=""');
+    expect(byCategory).toContain(`name="categoryId" value="${categoryId}"`);
+  });
+
   it("renders the default register for a malformed link rather than a 500", async () => {
     await signInAs(Role.STAFF_RO);
 

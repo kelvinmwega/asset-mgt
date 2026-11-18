@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { FormSelect } from "@/components/ui/form-select";
 import { StatusChip } from "@/components/ui/status-chip";
 import { AssetTagLink } from "@/components/asset-tag-link";
 import { EstateBar, type EstateCounts } from "@/components/estate-bar";
@@ -597,43 +597,32 @@ export default async function AssetsPage({
             className="w-full sm:w-72"
           />
         </div>
-        {/* `w-full sm:w-auto` on the wrapper and the select alike. The Select
-            primitive is `w-fit`, so it sizes to its WIDEST option — one long
-            category or site name and the filter row runs off the side of a
-            phone, taking the whole page's horizontal scroll with it (measured
-            at 390px: a 488px document). Matching the search input's own
-            `w-full sm:w-72` above. */}
-        <div className="flex w-full flex-col gap-1.5 sm:w-auto">
+        {/* why: width on the wrapper, never the trigger (G3) — a long name truncates instead of widening the row past a phone */}
+        <div className="flex w-full flex-col gap-1.5 sm:w-44">
           <Label htmlFor="filter-category">Category</Label>
-          <Select
+          <FormSelect
             id="filter-category"
             name="categoryId"
             defaultValue={filters.categoryId ?? ""}
-            className="w-full sm:w-fit"
-          >
-            <option value="">All</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </Select>
+            options={categories.map((category) => ({
+              value: category.id,
+              label: category.name,
+            }))}
+            emptyLabel="Any category"
+          />
         </div>
-        <div className="flex w-full flex-col gap-1.5 sm:w-auto">
+        <div className="flex w-full flex-col gap-1.5 sm:w-44">
           <Label htmlFor="filter-site">Site</Label>
-          <Select
+          <FormSelect
             id="filter-site"
             name="siteId"
             defaultValue={filters.siteId ?? ""}
-            className="w-full sm:w-fit"
-          >
-            <option value="">All</option>
-            {sites.map((site) => (
-              <option key={site.id} value={site.id}>
-                {site.name}
-              </option>
-            ))}
-          </Select>
+            options={sites.map((site) => ({
+              value: site.id,
+              label: site.name,
+            }))}
+            emptyLabel="Any site"
+          />
         </div>
         <Button type="submit" variant="outline">
           Filter
