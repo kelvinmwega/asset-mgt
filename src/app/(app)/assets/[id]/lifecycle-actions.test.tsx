@@ -1,7 +1,7 @@
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The server actions are the whole point of `../actions`, and importing it here
 // would drag Prisma and the auth stack into a component test. What each button
@@ -17,7 +17,12 @@ vi.mock("../actions", () => ({
 }));
 
 import { CONDITION_LABELS, CONDITION_ORDER } from "@/lib/labels";
-import { receiveAndTagAsset, sendToRepair } from "../actions";
+import {
+  assignAssetToPerson,
+  receiveAndTagAsset,
+  returnAssetFromPerson,
+  sendToRepair,
+} from "../actions";
 import { LifecycleActions, type LifecycleMove } from "./lifecycle-actions";
 import type { PickerPerson, ReturnDestination } from "./assignment-actions";
 
@@ -39,6 +44,8 @@ import type { PickerPerson, ReturnDestination } from "./assignment-actions";
 const people: PickerPerson[] = [
   { id: "p1", name: "Asha Mwangi", employeeRef: "EMP-0042" },
   { id: "p2", name: "Asha Mwangi", employeeRef: "EMP-0117" },
+  { id: "p3", name: "Asha Mwangi", employeeRef: null },
+  { id: "p4", name: "Brian Otieno", employeeRef: null },
 ];
 const BOTH_DESTINATIONS: ReturnDestination[] = ["IN_STOCK", "IN_REPAIR"];
 
@@ -106,6 +113,20 @@ async function openDialog(
     await user.click(screen.getByRole("menuitem", { name }));
   }
   return screen.findByRole("dialog");
+}
+
+/** The FormData the mocked action last received. */
+function posted(
+  action: (state: never, formData: FormData) => unknown,
+): FormData {
+  const formData = vi.mocked(action).mock.calls.at(-1)?.[1];
+  if (!(formData instanceof FormData)) throw new Error("nothing posted");
+  return formData;
+}
+
+/** Every option's accessible name in the open list. */
+function optionNames() {
+  return screen.getAllByRole("option").map((option) => option.textContent);
 }
 
 describe("one primary action per status, the rest behind More", () => {
@@ -245,44 +266,203 @@ describe("a move chosen from More", () => {
 });
 
 describe("what the dialogs ask for", () => {
-  it("offers both destinations on one Take it back form", async () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("offers both destinations on one Take it back form, condition mandatory with no Not recorded", async () => {
     const user = renderMoves(MOVES.ASSIGNED!);
 
     const dialog = await openDialog(user, "Take it back…");
 
     // Both ways out of ASSIGNED, on one form and one action.
     const destination = within(dialog).getByLabelText("Where it goes");
-    expect(
-      within(destination).getByRole("option", { name: "Back to stock" }),
-    ).toBeInTheDocument();
-    expect(
-      within(destination).getByRole("option", { name: "Straight to repair" }),
-    ).toBeInTheDocument();
+    expect(destination).toHaveTextContent("Back to stock");
+    await user.click(destination);
+    expect(optionNames()).toEqual(["Back to stock", "Straight to repair"]);
+    await user.keyboard("{Escape}");
+
     // Condition is the structured answer to "in what state" and is mandatory:
     // there is deliberately no "not recorded" option (AM-03 AC-2).
     const condition = within(dialog).getByLabelText("Condition on return");
     expect(condition).toBeRequired();
-    expect(
-      within(condition).queryByRole("option", { name: "Not recorded" }),
-    ).toBeNull();
+    expect(condition).toHaveTextContent("Good");
+    await user.click(condition);
+    expect(optionNames()).toEqual(
+      CONDITION_ORDER.map((value) => CONDITION_LABELS[value]),
+    );
+    await user.keyboard("{Escape}");
   });
 
-  it("disambiguates the picker by employee ref, and carries no email", async () => {
+  it("posts the destination and condition under their old names, the note required for repair (G2)", async () => {
+    const user = renderMoves(MOVES.ASSIGNED!);
+
+    let dialog = await openDialog(user, "Take it back…");
+    await user.click(within(dialog).getByRole("button", { name: "Take back" }));
+    expect(posted(returnAssetFromPerson).getAll("toStatus")).toEqual([
+      "IN_STOCK",
+    ]);
+    expect(posted(returnAssetFromPerson).getAll("condition")).toEqual(["GOOD"]);
+    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+
+    dialog = await openDialog(user, "Take it back…");
+    await user.click(within(dialog).getByLabelText("Where it goes"));
+    await user.click(
+      screen.getByRole("option", { name: "Straight to repair" }),
+    );
+    await user.click(within(dialog).getByLabelText("Condition on return"));
+    await user.click(screen.getByRole("option", { name: "Poor" }));
+    expect(
+      within(dialog).getByLabelText("Condition note (required)"),
+    ).toBeRequired();
+    await user.type(
+      within(dialog).getByLabelText("Condition note (required)"),
+      "Hinge cracked",
+    );
+    await user.click(
+      within(dialog).getByRole("button", {
+        name: "Take back and send to repair",
+      }),
+    );
+
+    expect(posted(returnAssetFromPerson).getAll("toStatus")).toEqual([
+      "IN_REPAIR",
+    ]);
+    expect(posted(returnAssetFromPerson).getAll("condition")).toEqual(["POOR"]);
+  });
+
+  it("tells same-named people apart in the picker, and carries no email (G7, G8)", async () => {
     const user = renderMoves(MOVES.IN_STOCK!);
 
     const dialog = await openDialog(user, "Assign…");
+    await user.click(within(dialog).getByRole("button", { name: "Assign to" }));
 
-    // Two people, same name. The employee ref is the organisation's own
-    // internal number and the only thing telling them apart — an email would
-    // work too, and is deliberately never sent to the client.
-    const picker = within(dialog).getByLabelText("Assign to");
+    // Three people named Asha Mwangi. The employee ref is the organisation's
+    // own internal number and what tells them apart; the one without a ref is
+    // marked rather than left identical. An email would work too, and is
+    // deliberately never sent to the client.
+    expect(within(dialog).getByRole("listbox")).toBeInTheDocument();
+    const names = optionNames();
+    expect(names).toEqual([
+      "Asha Mwangi EMP-0042",
+      "Asha Mwangi EMP-0117",
+      "Asha Mwangi No ref",
+      "Brian Otieno",
+    ]);
+    expect(new Set(names).size).toBe(names.length);
+    expect(dialog.textContent).not.toMatch(/@|no employee ref/i);
+
+    await user.type(
+      screen.getByRole("combobox", { name: "Search people" }),
+      "0117",
+    );
+    expect(optionNames()).toEqual(["Asha Mwangi EMP-0117"]);
+
+    await user.clear(screen.getByRole("combobox", { name: "Search people" }));
+    await user.type(
+      screen.getByRole("combobox", { name: "Search people" }),
+      "zq",
+    );
+    expect(within(dialog).getByRole("status")).toHaveTextContent(
+      'No one matches "zq".',
+    );
+  });
+
+  it('refuses Assign with nobody chosen, "Choose a person.", then posts the person chosen (G2, G13)', async () => {
+    const user = renderMoves(MOVES.IN_STOCK!);
+
+    const dialog = await openDialog(user, "Assign…");
+    await user.click(within(dialog).getByRole("button", { name: "Assign" }));
+
+    expect(assignAssetToPerson).not.toHaveBeenCalled();
+    const trigger = within(dialog).getByRole("button", { name: "Assign to" });
+    expect(trigger).toHaveAccessibleDescription("Choose a person.");
+    expect(trigger).toHaveAttribute("data-invalid", "true");
+
+    await user.click(trigger);
+    await user.click(
+      screen.getByRole("option", { name: "Asha Mwangi EMP-0117" }),
+    );
+    await user.click(within(dialog).getByRole("button", { name: "Assign" }));
+
+    expect(posted(assignAssetToPerson).getAll("personId")).toEqual(["p2"]);
+  });
+
+  it("opens the picker empty again after an assignment (action-state-dialog-reset)", async () => {
+    const user = renderMoves(MOVES.IN_STOCK!);
+
+    let dialog = await openDialog(user, "Assign…");
+    await user.click(within(dialog).getByRole("button", { name: "Assign to" }));
+    await user.click(screen.getByRole("option", { name: "Brian Otieno" }));
+    await user.click(within(dialog).getByRole("button", { name: "Assign" }));
+    await user.click(
+      await within(dialog).findByRole("button", { name: "Done" }),
+    );
+
+    dialog = await openDialog(user, "Assign…");
     expect(
-      within(picker).getByRole("option", { name: "Asha Mwangi — EMP-0042" }),
-    ).toBeInTheDocument();
-    expect(
-      within(picker).getByRole("option", { name: "Asha Mwangi — EMP-0117" }),
-    ).toBeInTheDocument();
-    expect(dialog.textContent).not.toMatch(/@/);
+      within(dialog).getByRole("button", { name: "Assign to" }),
+    ).toHaveTextContent("Choose a person");
+  });
+
+  it("closes the open picker on Escape and leaves the dialog open (G9)", async () => {
+    const user = renderMoves(MOVES.IN_STOCK!);
+    const dialog = await openDialog(user, "Assign…");
+    const trigger = within(dialog).getByRole("button", { name: "Assign to" });
+
+    await user.click(trigger);
+    expect(dialog).toContainElement(screen.getByRole("listbox"));
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.getByRole("dialog")).toBe(dialog);
+    expect(trigger).toHaveFocus();
+  });
+
+  describe("below 640 px (G16)", () => {
+    beforeEach(() => {
+      vi.spyOn(window, "matchMedia").mockImplementation(
+        (query: string) =>
+          ({
+            matches: true,
+            media: query,
+            onchange: null,
+            addEventListener: () => {},
+            removeEventListener: () => {},
+            addListener: () => {},
+            removeListener: () => {},
+            dispatchEvent: () => false,
+          }) as MediaQueryList,
+      );
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it("opens the search and list inline in the dialog's form, above Cancel and Assign", async () => {
+      const user = renderMoves(MOVES.IN_STOCK!);
+      const dialog = await openDialog(user, "Assign…");
+
+      await user.click(
+        within(dialog).getByRole("button", { name: "Assign to" }),
+      );
+
+      expect(
+        dialog.querySelector("[data-radix-popper-content-wrapper]"),
+      ).toBeNull();
+      const form = dialog.querySelector("form")!;
+      const listbox = within(form).getByRole("listbox");
+      expect(listbox).toHaveClass("max-h-[min(264px,40dvh)]");
+      expect(
+        listbox.compareDocumentPosition(
+          within(form).getByRole("button", { name: "Assign" }),
+        ) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(
+        within(form).getByRole("combobox", { name: "Search people" }),
+      ).toHaveFocus();
+    });
   });
 });
 
@@ -294,12 +474,6 @@ describe("the condition a lifecycle dialog posts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
-
-  function posted(action: typeof receiveAndTagAsset): FormData {
-    const formData = vi.mocked(action).mock.calls.at(-1)?.[1];
-    if (!(formData instanceof FormData)) throw new Error("nothing posted");
-    return formData;
-  }
 
   async function optionsOf(
     user: ReturnType<typeof userEvent.setup>,

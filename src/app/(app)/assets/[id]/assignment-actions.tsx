@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
+import { FormSelect } from "@/components/ui/form-select";
 import { FormDialog, type DialogOpening } from "@/components/form-dialog";
 import { conditionNotesRequiredFor } from "@/lib/asset-lifecycle";
 import { assignAssetToPerson, returnAssetFromPerson } from "../actions";
@@ -64,16 +65,22 @@ export function AssignDialog({
         <>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="assign-person">Assign to</Label>
-            <Select id="assign-person" name="personId" defaultValue="" required>
-              <option value="" disabled>
-                Choose a person
-              </option>
-              {people.map((person) => (
-                <option key={person.id} value={person.id}>
-                  {person.name} — {person.employeeRef ?? "no employee ref"}
-                </option>
-              ))}
-            </Select>
+            <Combobox
+              id="assign-person"
+              name="personId"
+              options={people.map((person) => ({
+                value: person.id,
+                label: person.name,
+                secondary: person.employeeRef,
+              }))}
+              placeholder="Choose a person"
+              searchLabel="Search people"
+              searchPlaceholder="Search by name or employee ref"
+              countNoun="people"
+              noMatchMessage={(query) => `No one matches "${query}".`}
+              missingSecondaryLabel="No ref"
+              required
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="assign-notes">Notes</Label>
@@ -142,38 +149,31 @@ export function ReturnFromPersonDialog({
     >
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="return-destination">Where it goes</Label>
-        <Select
+        <FormSelect
           id="return-destination"
           name="toStatus"
           value={toStatus}
-          onChange={(event) =>
-            setToStatus(event.target.value as ReturnDestination)
-          }
-        >
-          {destinations.map((destination) => (
-            <option key={destination} value={destination}>
-              {DESTINATION_LABELS[destination]}
-            </option>
-          ))}
-        </Select>
+          onValueChange={(next) => setToStatus(next as ReturnDestination)}
+          options={destinations.map((destination) => ({
+            value: destination,
+            label: DESTINATION_LABELS[destination],
+          }))}
+        />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="return-condition">Condition on return</Label>
-        <Select
+        <FormSelect
           id="return-condition"
           name="condition"
           value={condition}
-          onChange={(event) =>
-            setCondition(event.target.value as ConditionOption)
-          }
+          onValueChange={(next) => setCondition(next as ConditionOption)}
+          options={CONDITION_ORDER.map((option) => ({
+            value: option,
+            label: CONDITION_LABELS[option],
+          }))}
           required
-        >
-          {CONDITION_ORDER.map((option) => (
-            <option key={option} value={option}>
-              {CONDITION_LABELS[option]}
-            </option>
-          ))}
-        </Select>
+          placeholder="Choose a condition"
+        />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="return-condition-notes">
