@@ -1,5 +1,6 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The server actions are the whole point of `../actions`, and importing it here
@@ -15,6 +16,8 @@ vi.mock("../actions", () => ({
   returnAssetFromPerson: vi.fn(async () => ({ ok: true, message: "Back." })),
 }));
 
+import { CONDITION_LABELS, CONDITION_ORDER } from "@/lib/labels";
+import { receiveAndTagAsset, sendToRepair } from "../actions";
 import { LifecycleActions, type LifecycleMove } from "./lifecycle-actions";
 import type { PickerPerson, ReturnDestination } from "./assignment-actions";
 
@@ -60,56 +63,87 @@ function renderMoves(moves: LifecycleMove[]) {
   return userEvent.setup();
 }
 
-/** Whether an affordance sits in the `More` menu rather than leading. */
+/**
+ * Radix registers a layer's outside-pointer listener on a zero-delay timer
+ * after mount. A user never clicks inside that tick, so the tests must not.
+ */
+function settleLayers() {
+  return act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+}
+
+/** Opens `More`, when the status offers one, so the moves behind it are on screen. */
+async function openMore(user: ReturnType<typeof userEvent.setup>) {
+  await settleLayers();
+  const more = screen.queryByRole("button", { name: "More" });
+  if (more) await user.click(more);
+}
+
+/** Whether an affordance sits in the `More` menu rather than leading. Call with the menu open. */
 function behindMore(name: string): boolean {
-  return screen.getByRole("button", { name }).closest("details") !== null;
+  const affordance =
+    screen.queryByRole("button", { name }) ??
+    screen.getByRole("menuitem", { name });
+  return affordance.closest('[role="menu"]') !== null;
+}
+
+/** Whether a move is offered at all, leading or in the open menu. */
+function offered(name: string): boolean {
+  return (
+    screen.queryByRole("button", { name }) !== null ||
+    screen.queryByRole("menuitem", { name }) !== null
+  );
 }
 
 async function openDialog(
   user: ReturnType<typeof userEvent.setup>,
   name: string,
 ) {
-  if (behindMore(name)) {
-    await user.click(screen.getByText("More"));
+  const lead = screen.queryByRole("button", { name });
+  if (lead) {
+    await user.click(lead);
+  } else {
+    await openMore(user);
+    await user.click(screen.getByRole("menuitem", { name }));
   }
-  await user.click(screen.getByRole("button", { name }));
   return screen.findByRole("dialog");
 }
 
 describe("one primary action per status, the rest behind More", () => {
-  it("leads with Receive and tag on an ON_ORDER asset", () => {
-    renderMoves(MOVES.ON_ORDER!);
+  it("leads with Receive and tag on an ON_ORDER asset", async () => {
+    const user = renderMoves(MOVES.ON_ORDER!);
+    await openMore(user);
 
     expect(behindMore("Receive and tag…")).toBe(false);
     expect(behindMore("Retire asset…")).toBe(true);
-    expect(screen.queryByRole("button", { name: "Assign…" })).toBeNull();
+    expect(offered("Assign…")).toBe(false);
   });
 
-  it("leads with Assign on an IN_STOCK asset, and offers send to repair and retire", () => {
-    renderMoves(MOVES.IN_STOCK!);
+  it("leads with Assign on an IN_STOCK asset, and offers send to repair and retire", async () => {
+    const user = renderMoves(MOVES.IN_STOCK!);
+    await openMore(user);
 
     expect(behindMore("Assign…")).toBe(false);
     expect(behindMore("Send to repair…")).toBe(true);
     expect(behindMore("Retire asset…")).toBe(true);
     // Nothing is out with anyone, so there is nothing to take back.
-    expect(screen.queryByRole("button", { name: "Take it back…" })).toBeNull();
+    expect(offered("Take it back…")).toBe(false);
   });
 
-  it("leads with Take it back on an ASSIGNED asset, and offers no second path out", () => {
-    renderMoves(MOVES.ASSIGNED!);
+  it("leads with Take it back on an ASSIGNED asset, and offers no second path out", async () => {
+    const user = renderMoves(MOVES.ASSIGNED!);
+    await openMore(user);
 
     expect(behindMore("Take it back…")).toBe(false);
     expect(behindMore("Retire asset…")).toBe(true);
     // AM-03 §4.2: a repair-bound return IS the return action. A parallel
     // "send to repair" here would close the assignment in a second event.
-    expect(
-      screen.queryByRole("button", { name: "Send to repair…" }),
-    ).toBeNull();
-    expect(screen.queryByRole("button", { name: "Assign…" })).toBeNull();
+    expect(offered("Send to repair…")).toBe(false);
+    expect(offered("Assign…")).toBe(false);
   });
 
-  it("leads with Return from repair on an IN_REPAIR asset", () => {
-    renderMoves(MOVES.IN_REPAIR!);
+  it("leads with Return from repair on an IN_REPAIR asset", async () => {
+    const user = renderMoves(MOVES.IN_REPAIR!);
+    await openMore(user);
 
     expect(behindMore("Return from repair…")).toBe(false);
     expect(behindMore("Retire asset…")).toBe(true);
@@ -120,6 +154,93 @@ describe("one primary action per status, the rest behind More", () => {
 
     expect(screen.queryAllByRole("button")).toHaveLength(0);
     expect(screen.getByText(/lifecycle ends here/i)).toBeInTheDocument();
+  });
+
+  it("lists every move behind More in the server markup, each label its element's only text", () => {
+    const html = renderToStaticMarkup(
+      <LifecycleActions
+        assetId="a1"
+        moves={MOVES.IN_STOCK!}
+        people={people}
+        returnDestinations={BOTH_DESTINATIONS}
+      />,
+    );
+
+    expect(html).toContain(">Send to repair…<");
+    expect(html).toContain(">Retire asset…<");
+  });
+
+  it("keeps Retire last, behind a separator", async () => {
+    const user = renderMoves(MOVES.IN_STOCK!);
+    await openMore(user);
+
+    const menu = screen.getByRole("menu", { name: "More" });
+    expect(
+      Array.from(menu.children).map(
+        (child) => child.getAttribute("role") + ":" + child.textContent,
+      ),
+    ).toEqual([
+      "menuitem:Send to repair…",
+      "separator:",
+      "menuitem:Retire asset…",
+    ]);
+  });
+});
+
+/**
+ * G10. The menu's content unmounts as it closes, which is exactly when the
+ * chosen move's dialog opens, so these fail if the dialog is nested in it.
+ */
+describe("a move chosen from More", () => {
+  it("closes the menu, opens its dialog, and returns focus to More when the dialog closes", async () => {
+    const user = renderMoves(MOVES.IN_STOCK!);
+
+    const dialog = await openDialog(user, "Send to repair…");
+
+    expect(screen.queryByRole("menuitem")).toBeNull();
+    expect(dialog).toHaveAccessibleName("Send to repair");
+    expect(dialog).toContainElement(document.activeElement as HTMLElement);
+
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("button", { name: "More" })).toHaveFocus();
+  });
+
+  it("closes on Escape and on an outside click, focus back on More", async () => {
+    const user = renderMoves(MOVES.IN_STOCK!);
+    const more = screen.getByRole("button", { name: "More" });
+
+    await openMore(user);
+    await settleLayers();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("menuitem")).toBeNull();
+    expect(more).toHaveFocus();
+
+    await openMore(user);
+    await settleLayers();
+    await user.click(document.body);
+    expect(screen.queryByRole("menuitem")).toBeNull();
+  });
+
+  it("opens a fresh run each time, not the last one's result", async () => {
+    const user = renderMoves(MOVES.IN_STOCK!);
+
+    let dialog = await openDialog(user, "Send to repair…");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Send to repair" }),
+    );
+    expect(await within(dialog).findByRole("status")).toHaveTextContent(
+      "Sent.",
+    );
+    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+    expect(screen.getByRole("button", { name: "More" })).toHaveFocus();
+
+    dialog = await openDialog(user, "Send to repair…");
+    expect(within(dialog).queryByRole("status")).toBeNull();
+    expect(
+      within(dialog).getByRole("button", { name: "Send to repair" }),
+    ).toBeEnabled();
   });
 });
 
@@ -162,6 +283,89 @@ describe("what the dialogs ask for", () => {
       within(picker).getByRole("option", { name: "Asha Mwangi — EMP-0117" }),
     ).toBeInTheDocument();
     expect(dialog.textContent).not.toMatch(/@/);
+  });
+});
+
+/**
+ * G2, G5, G15: each condition posts under `condition` exactly as the native
+ * select did, and the empty choice arrives as "" so the action writes NULL.
+ */
+describe("the condition a lifecycle dialog posts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function posted(action: typeof receiveAndTagAsset): FormData {
+    const formData = vi.mocked(action).mock.calls.at(-1)?.[1];
+    if (!(formData instanceof FormData)) throw new Error("nothing posted");
+    return formData;
+  }
+
+  async function optionsOf(
+    user: ReturnType<typeof userEvent.setup>,
+    trigger: HTMLElement,
+  ) {
+    await user.click(trigger);
+    const names = screen
+      .getAllByRole("option")
+      .map((option) => option.textContent);
+    await user.keyboard("{Escape}");
+    return names;
+  }
+
+  it("offers Not recorded on receipt, and posts it as an empty string", async () => {
+    const user = renderMoves(MOVES.ON_ORDER!);
+    const dialog = await openDialog(user, "Receive and tag…");
+    const condition = within(dialog).getByLabelText("Condition on arrival");
+
+    expect(await optionsOf(user, condition)).toEqual([
+      "Not recorded",
+      ...CONDITION_ORDER.map((value) => CONDITION_LABELS[value]),
+    ]);
+    await user.type(within(dialog).getByLabelText("Asset tag"), "IT-0001");
+    await user.click(condition);
+    await user.click(screen.getByRole("option", { name: "Not recorded" }));
+    await user.click(
+      within(dialog).getByRole("button", { name: "Receive and tag" }),
+    );
+
+    expect(posted(receiveAndTagAsset).getAll("condition")).toEqual([""]);
+  });
+
+  it("offers Leave unchanged on repair, posting the default until it is chosen", async () => {
+    const user = renderMoves(MOVES.IN_STOCK!);
+    let dialog = await openDialog(user, "Send to repair…");
+    const condition = within(dialog).getByLabelText("Condition");
+
+    expect(condition).toHaveTextContent("Defective");
+    expect((await optionsOf(user, condition))[0]).toBe("Leave unchanged");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Send to repair" }),
+    );
+    expect(posted(sendToRepair).getAll("condition")).toEqual(["DEFECTIVE"]);
+    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+
+    dialog = await openDialog(user, "Send to repair…");
+    await user.click(within(dialog).getByLabelText("Condition"));
+    await user.click(screen.getByRole("option", { name: "Leave unchanged" }));
+    await user.click(
+      within(dialog).getByRole("button", { name: "Send to repair" }),
+    );
+    expect(posted(sendToRepair).getAll("condition")).toEqual([""]);
+  });
+
+  it("closes the open condition list on Escape and leaves the dialog open (G9)", async () => {
+    const user = renderMoves(MOVES.IN_REPAIR!);
+    const dialog = await openDialog(user, "Return from repair…");
+    const condition = within(dialog).getByLabelText("Condition");
+
+    await user.click(condition);
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.getByRole("dialog")).toBe(dialog);
+    expect(condition).toHaveFocus();
   });
 });
 

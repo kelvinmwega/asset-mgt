@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { FormDialog } from "@/components/form-dialog";
+import { FormDialog, type DialogOpening } from "@/components/form-dialog";
 import { conditionNotesRequiredFor } from "@/lib/asset-lifecycle";
 import { assignAssetToPerson, returnAssetFromPerson } from "../actions";
 import { CONDITION_LABELS, CONDITION_ORDER } from "@/lib/labels";
@@ -40,17 +40,16 @@ type ConditionOption = (typeof CONDITION_ORDER)[number];
 export function AssignDialog({
   assetId,
   people,
-  trigger,
+  ...opening
 }: {
   assetId: string;
   people: readonly PickerPerson[];
-  trigger: ReactNode;
-}) {
+} & DialogOpening) {
   return (
     <FormDialog
       action={assignAssetToPerson}
       hiddenFields={{ assetId }}
-      trigger={trigger}
+      {...opening}
       title="Assign this asset"
       description="Who is taking it. The assignment records the holder — the register answers that question from here, not from a note."
       submitLabel="Assign"
@@ -114,12 +113,11 @@ export function AssignDialog({
 export function ReturnFromPersonDialog({
   assetId,
   destinations,
-  trigger,
+  ...opening
 }: {
   assetId: string;
   destinations: readonly ReturnDestination[];
-  trigger: ReactNode;
-}) {
+} & DialogOpening) {
   // `?? "IN_STOCK"` rather than trusting destinations[0]: an empty array is
   // unreachable today (this form only renders from ASSIGNED, which permits
   // both) but indexing it is undefined at runtime and a type error the moment
@@ -134,7 +132,7 @@ export function ReturnFromPersonDialog({
     <FormDialog
       action={returnAssetFromPerson}
       hiddenFields={{ assetId }}
-      trigger={trigger}
+      {...opening}
       title="Take it back"
       description="Closes the assignment. Back to stock or straight to repair — one action either way, so the register is never briefly wrong about who holds it."
       submitLabel={

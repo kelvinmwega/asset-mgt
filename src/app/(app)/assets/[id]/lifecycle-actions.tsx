@@ -1,10 +1,18 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { Fragment, useRef, useState, type ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import {
   receiveAndTagAsset,
   retireAsset,
@@ -14,7 +22,7 @@ import {
 } from "../actions";
 import { CONDITION_LABELS, CONDITION_ORDER } from "@/lib/labels";
 import { ConfirmActionDialog } from "@/components/confirm-action-dialog";
-import { FormDialog } from "@/components/form-dialog";
+import { FormDialog, type DialogOpening } from "@/components/form-dialog";
 import { EventNoteHint } from "./event-note-hint";
 import {
   AssignDialog,
@@ -76,6 +84,11 @@ const MOVE_PRIORITY: readonly LifecycleMove[] = [
   "RETIRE",
 ];
 
+const CONDITION_OPTIONS = CONDITION_ORDER.map((condition) => ({
+  value: condition,
+  label: CONDITION_LABELS[condition],
+}));
+
 /**
  * Lifecycle actions for an asset's current status: one primary button and a
  * `More` menu (AM-09 DESIGN §4.3). The server component derives `moves` from
@@ -111,11 +124,11 @@ export function LifecycleActions({
     moves.includes(move),
   );
 
-  const dialogFor = (move: LifecycleMove, trigger: ReactNode) => (
+  const dialogFor = (move: LifecycleMove, opening: DialogOpening) => (
     <MoveDialog
       key={move}
       move={move}
-      trigger={trigger}
+      opening={opening}
       assetId={assetId}
       people={people}
       returnDestinations={returnDestinations}
@@ -128,29 +141,16 @@ export function LifecycleActions({
   return (
     <div className="flex flex-wrap items-center gap-2">
       {primary
-        ? dialogFor(
-            primary,
-            <Button type="button" className="w-fit">
-              {MOVE_LABELS[primary]}
-            </Button>,
-          )
+        ? dialogFor(primary, {
+            trigger: (
+              <Button type="button" className="w-fit">
+                {MOVE_LABELS[primary]}
+              </Button>
+            ),
+          })
         : null}
       {secondary.length > 0 ? (
-        <MoreMenu>
-          {secondary.map((move) =>
-            dialogFor(
-              move,
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start"
-              >
-                {MOVE_LABELS[move]}
-              </Button>,
-            ),
-          )}
-        </MoreMenu>
+        <MoreMenu moves={secondary} dialogFor={dialogFor} />
       ) : null}
     </div>
   );
@@ -159,41 +159,70 @@ export function LifecycleActions({
 /**
  * The secondary moves, one step away.
  *
- * A native `<details>` rather than a menu library. Three reasons, in order of
- * weight: it needs no new dependency (Radix's dialog is the only one in the tree
- * and adding a dropdown for four items is not a trade this earns); its items are
- * in the server-rendered markup whether it is open or not, which is what lets
- * the AM-03 acceptance tests keep asserting WHICH moves a status offers; and it
- * is keyboard- and screen-reader-operable with no code of ours in the path.
+ * An inline menu, so its items are in the server-rendered markup whether it is
+ * open or not — which is what lets the AM-03 acceptance tests keep asserting
+ * WHICH moves a status offers.
  *
- * It does not close when a dialog opens over it. Radix returns focus to the
- * trigger inside it on close, which is the behaviour that matters; forcing the
- * disclosure shut would fight that for a cosmetic gain.
+ * Each move's dialog is a sibling of the menu, never inside it: the menu's
+ * content unmounts as it closes, which is the moment a chosen move's dialog
+ * opens (G10). So the menu only records the choice, the dialog is opened from
+ * here, and on close it hands focus back to More rather than to a trigger that
+ * no longer exists.
  */
-function MoreMenu({ children }: { children: ReactNode }) {
+function MoreMenu({
+  moves,
+  dialogFor,
+}: {
+  moves: readonly LifecycleMove[];
+  dialogFor: (move: LifecycleMove, opening: DialogOpening) => ReactNode;
+}) {
+  const moreRef = useRef<HTMLButtonElement>(null);
+  const [chosen, setChosen] = useState<LifecycleMove | null>(null);
+
   return (
-    <details className="group relative">
-      <summary className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 dark:hover:bg-input/50 inline-flex h-9 cursor-pointer list-none items-center justify-center rounded-md border px-4 py-2 text-sm font-medium shadow-xs transition-all outline-none select-none focus-visible:ring-[3px] [&::-webkit-details-marker]:hidden">
-        More
-      </summary>
-      <div className="bg-popover absolute right-0 z-20 mt-1 flex min-w-48 flex-col rounded-lg border p-1 shadow-lg">
-        {children}
-      </div>
-    </details>
+    <>
+      <DropdownMenu inline>
+        <DropdownMenuTrigger asChild ref={moreRef}>
+          <Button type="button" variant="outline">
+            More
+            <ChevronDown aria-hidden />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          {moves.map((move, index) => (
+            <Fragment key={move}>
+              {move === "RETIRE" && index > 0 ? (
+                <DropdownMenuSeparator />
+              ) : null}
+              <DropdownMenuItem onSelect={() => setChosen(move)}>
+                {MOVE_LABELS[move]}
+              </DropdownMenuItem>
+            </Fragment>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {moves.map((move) =>
+        dialogFor(move, {
+          open: chosen === move,
+          onOpenChange: (open) => setChosen(open ? move : null),
+          returnFocusTo: moreRef,
+        }),
+      )}
+    </>
   );
 }
 
-/** One move, one dialog. The trigger is supplied so the caller decides its rank. */
+/** One move, one dialog. The opening is supplied so the caller decides its rank. */
 function MoveDialog({
   move,
-  trigger,
+  opening,
   assetId,
   people,
   returnDestinations,
   isHeld,
 }: {
   move: LifecycleMove;
-  trigger: ReactNode;
+  opening: DialogOpening;
   assetId: string;
   people: readonly PickerPerson[];
   returnDestinations: readonly ReturnDestination[];
@@ -201,24 +230,22 @@ function MoveDialog({
 }) {
   switch (move) {
     case "RECEIVE":
-      return <ReceiveDialog assetId={assetId} trigger={trigger} />;
+      return <ReceiveDialog assetId={assetId} {...opening} />;
     case "ASSIGN":
-      return (
-        <AssignDialog assetId={assetId} people={people} trigger={trigger} />
-      );
+      return <AssignDialog assetId={assetId} people={people} {...opening} />;
     case "RETURN_FROM_PERSON":
       return (
         <ReturnFromPersonDialog
           assetId={assetId}
           destinations={returnDestinations}
-          trigger={trigger}
+          {...opening}
         />
       );
     case "SEND_TO_REPAIR":
       return (
         <RepairDialog
           assetId={assetId}
-          trigger={trigger}
+          {...opening}
           action={sendToRepair}
           title="Send to repair"
           description="It leaves stock until it comes back. The asset keeps its tag and its history."
@@ -231,7 +258,7 @@ function MoveDialog({
       return (
         <RepairDialog
           assetId={assetId}
-          trigger={trigger}
+          {...opening}
           action={returnFromRepair}
           title="Return from repair"
           description="Back on the shelf, in whatever condition it came back in."
@@ -241,25 +268,20 @@ function MoveDialog({
         />
       );
     case "RETIRE":
-      return (
-        <RetireDialog assetId={assetId} trigger={trigger} isHeld={isHeld} />
-      );
+      return <RetireDialog assetId={assetId} {...opening} isHeld={isHeld} />;
   }
 }
 
 /** ON_ORDER -> IN_STOCK. The tag is mandatory here; the DB CHECK is the backstop. */
 function ReceiveDialog({
   assetId,
-  trigger,
-}: {
-  assetId: string;
-  trigger: ReactNode;
-}) {
+  ...opening
+}: { assetId: string } & DialogOpening) {
   return (
     <FormDialog
       action={receiveAndTagAsset}
       hiddenFields={{ assetId }}
-      trigger={trigger}
+      {...opening}
       title="Receive and tag"
       description="A tag is mandatory from delivery onwards — the register tracks the asset by it from here."
       submitLabel="Receive and tag"
@@ -271,14 +293,13 @@ function ReceiveDialog({
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="receive-condition">Condition on arrival</Label>
-        <Select id="receive-condition" name="condition" defaultValue="NEW">
-          <option value="">Not recorded</option>
-          {CONDITION_ORDER.map((condition) => (
-            <option key={condition} value={condition}>
-              {CONDITION_LABELS[condition]}
-            </option>
-          ))}
-        </Select>
+        <FormSelect
+          id="receive-condition"
+          name="condition"
+          defaultValue="NEW"
+          emptyLabel="Not recorded"
+          options={CONDITION_OPTIONS}
+        />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="receive-notes">Notes</Label>
@@ -292,16 +313,15 @@ function ReceiveDialog({
 /** The repair loop, in both directions — same fields, different action. */
 function RepairDialog({
   assetId,
-  trigger,
   action,
   title,
   description,
   submitLabel,
   pendingLabel,
   defaultCondition,
+  ...opening
 }: {
   assetId: string;
-  trigger: ReactNode;
   action: (
     previous: AssetActionState,
     formData: FormData,
@@ -311,13 +331,13 @@ function RepairDialog({
   submitLabel: string;
   pendingLabel: string;
   defaultCondition: string;
-}) {
+} & DialogOpening) {
   const idPrefix = title.toLowerCase().replace(/\s+/g, "-");
   return (
     <FormDialog
       action={action}
       hiddenFields={{ assetId }}
-      trigger={trigger}
+      {...opening}
       title={title}
       description={description}
       submitLabel={submitLabel}
@@ -325,18 +345,13 @@ function RepairDialog({
     >
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${idPrefix}-condition`}>Condition</Label>
-        <Select
+        <FormSelect
           id={`${idPrefix}-condition`}
           name="condition"
           defaultValue={defaultCondition}
-        >
-          <option value="">Leave unchanged</option>
-          {CONDITION_ORDER.map((condition) => (
-            <option key={condition} value={condition}>
-              {CONDITION_LABELS[condition]}
-            </option>
-          ))}
-        </Select>
+          emptyLabel="Leave unchanged"
+          options={CONDITION_OPTIONS}
+        />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${idPrefix}-notes`}>Notes</Label>
@@ -358,18 +373,17 @@ function RepairDialog({
  */
 function RetireDialog({
   assetId,
-  trigger,
   isHeld,
+  ...opening
 }: {
   assetId: string;
-  trigger: ReactNode;
   isHeld: boolean;
-}) {
+} & DialogOpening) {
   return (
     <ConfirmActionDialog
       action={retireAsset}
       hiddenFields={{ assetId }}
-      trigger={trigger}
+      {...opening}
       title="Retire this asset?"
       description={
         <>

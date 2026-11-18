@@ -1,6 +1,11 @@
 "use client";
 
-import { useActionState, useState, type ReactNode } from "react";
+import {
+  useActionState,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -54,9 +59,28 @@ import {
 /** The shape `AssetActionState` and `UserActionState` already have. */
 export type FormDialogState = { ok: boolean; message: string } | null;
 
-type FormDialogProps = {
-  /** The button that opens the dialog. Opens it; submits nothing. */
-  trigger: ReactNode;
+/**
+ * How an action dialog opens: from its own trigger, which opens it and submits
+ * nothing, or from outside. A dialog chosen from a menu cannot live inside the
+ * menu, whose content unmounts as the menu closes (custom-dropdowns G10), so
+ * its owner holds `open` and names where focus goes back on close — Radix
+ * returns focus to a trigger, and this dialog has none.
+ */
+export type DialogOpening =
+  | {
+      trigger: ReactNode;
+      open?: never;
+      onOpenChange?: never;
+      returnFocusTo?: never;
+    }
+  | {
+      trigger?: never;
+      open: boolean;
+      onOpenChange: (open: boolean) => void;
+      returnFocusTo: RefObject<HTMLElement | null>;
+    };
+
+type FormDialogProps = DialogOpening & {
   title: string;
   /** One line on what this move does. A dialog with no context is a prompt. */
   description: ReactNode;
@@ -97,20 +121,49 @@ type FormDialogProps = {
  * reset.
  */
 export function FormDialog(props: FormDialogProps) {
-  const [open, setOpen] = useState(false);
-  const [generation, setGeneration] = useState(0);
+  const run = useDialogRun(props);
 
   return (
     <FormDialogRun
-      key={generation}
+      key={run.generation}
       {...props}
-      open={open}
-      onOpenChange={(next) => {
-        if (next) setGeneration((current) => current + 1);
-        setOpen(next);
-      }}
+      open={run.open}
+      onOpenChange={run.onOpenChange}
+      onCloseAutoFocus={run.onCloseAutoFocus}
     />
   );
+}
+
+/**
+ * "Is it open" and "which run is this", for both action dialogs, whichever way
+ * they are opened. The generation is bumped on the rising edge of `open` as
+ * seen at render, because an owner-held `open` arrives as a prop rather than
+ * through Radix's `onOpenChange`: watching the edge gives the menu-opened
+ * dialog the same fresh run per open as the trigger-opened one.
+ */
+export function useDialogRun(opening: DialogOpening) {
+  const [ownOpen, setOwnOpen] = useState(false);
+  const [generation, setGeneration] = useState(0);
+  const open = opening.open ?? ownOpen;
+  const [seenOpen, setSeenOpen] = useState(open);
+  if (open !== seenOpen) {
+    setSeenOpen(open);
+    if (open) setGeneration((current) => current + 1);
+  }
+
+  return {
+    generation,
+    open,
+    onOpenChange: (next: boolean) => {
+      if (opening.open === undefined) setOwnOpen(next);
+      opening.onOpenChange?.(next);
+    },
+    onCloseAutoFocus: (event: Event) => {
+      if (opening.returnFocusTo === undefined) return;
+      event.preventDefault();
+      opening.returnFocusTo.current?.focus();
+    },
+  };
 }
 
 /** One run of the action: mounted fresh per open, discarded on the next one. */
@@ -125,10 +178,12 @@ function FormDialogRun({
   children,
   open,
   onOpenChange,
-}: FormDialogProps & {
+  onCloseAutoFocus,
+}: Omit<FormDialogProps, "open" | "onOpenChange" | "returnFocusTo"> & {
   open: boolean;
   /** Asks the owner to open or close. Refused here while the action runs. */
   onOpenChange: (next: boolean) => void;
+  onCloseAutoFocus: (event: Event) => void;
 }) {
   const [state, formAction, pending] = useActionState<
     FormDialogState,
@@ -149,9 +204,12 @@ function FormDialogRun({
         onOpenChange(next);
       }}
     >
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger === undefined ? null : (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      )}
       <DialogContent
         showClose={!pending}
+        onCloseAutoFocus={onCloseAutoFocus}
         onEscapeKeyDown={(event) => {
           if (pending) event.preventDefault();
         }}
