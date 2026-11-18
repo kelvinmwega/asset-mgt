@@ -25,7 +25,7 @@ A meaningful share arrive on a phone, on patchy mobile data.
 
 Verifiable evidence only: the running deployment; the docs trail (two ADRs,
 per-feature designs, four retros, a runbook); real-Postgres integration tests,
-mutation testing over guard-bearing modules, an env-free CI build; AGPL-3.0.
+an env-free CI build; AGPL-3.0.
 
 **Never stated:** stars, forks, users, testimonials, benchmarks, uptime,
 pricing, customers. **The hosted tier does not appear on this page at all.**

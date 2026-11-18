@@ -167,8 +167,7 @@ conformance level if a client or funder later names one.
   per-feature designs under `docs/features/AM-0*`, four retrospectives under
   `docs/retros/`, `docs/RUNBOOK.md`, `docs/DPA-TRANSFER-NOTE.md`.
 - **Real engineering evidence, verified in-repo:** real-Postgres integration
-  tests, mutation testing over guard-bearing modules, an env-free build proven in
-  CI every run.
+  tests, an env-free build proven in CI every run.
 - **Local dev data:** ~396 seeded assets, so realistic volume is available to
   design against without any real data.
 
