@@ -25,24 +25,26 @@ and sites afterwards at `/admin/reference` without a deploy.
 
 ## Mutation testing
 
-`pnpm test:mutation` runs Stryker over the five modules that encode an
-invariant a test claims to defend — the lifecycle transition map, the person
--data chokepoint, the assignment/return write path, the sign-in throttle, and
-the confirm dialog. It answers the question this project has got wrong six
-times: _if I delete the production line this test defends, does the test go
-red?_ Configuration, the triage of every surviving mutant, and how the
-breaking threshold was chosen are all in `stryker.config.mjs`.
+**Removed 2026-11-18.** Stryker ran weekly over the guard-bearing modules
+(issue #12) from 2026-08-02. It last produced a score on 2026-08-10. From
+AM-10 onwards every run died in Stryker's initial dry run, before a single
+mutant was tested: `@stryker-mutator/vitest-runner` hard-codes
+`pool: 'threads'`, and in a worker thread assigning `process.env.TZ` does not
+reset the ICU zone, so the seven AM-10 tests that pin a time zone through
+`test/time-zone.ts` fail there while passing under the `forks` pool `ci` uses.
+After fourteen consecutive red weekly runs it was removed rather than adapted.
 
-It is **not** part of the `ci` required check — most mutants cost a Postgres
-round-trip, so a full run is ~10 minutes locally (9m50s over 382 mutants at the
-2026-08-02 triage). It runs weekly and on pull requests that touch a mutated
-module or its tests (`.github/workflows/mutation.yml`), and it can fail the
-build.
+The guard it backed up stands unchanged, and was always the primary one: every
+guard a condition names is red-proved **by hand**, by deleting the production
+line it defends and watching a named test fail (CLAUDE.md, Process). The
+`// Stryker disable` comments still in `src/` are inert; each one's reasoning
+about an equivalent or unreachable branch remains true.
 
-**It requires `TEST_DATABASE_URL`, and refuses to start without it.** Three of
-the five modules are covered only by real-DB integration tests, which _skip_
-rather than fail when that variable is missing — so a run without it would
-report a score computed from tests that never ran.
+If it comes back, the dry-run blocker has to be solved first: either the
+time-zone tests stop depending on `process.env.TZ`, or they skip in a worker
+thread and `calendar-date.ts`/`relative-time.ts` stay out of the mutated set.
+The last config lives in git history (`stryker.config.mjs`, removed with this
+note).
 
 ## Provisioning runbook (manual — substitutes for IaC state)
 

@@ -26,12 +26,10 @@ export default defineConfig({
       // and a local pnpm store can appear at .pnpm-store/. Both contain whole
       // copies of the source tree, so the default include globs collect
       // another branch's tests — 264 failing files from work not on this
-      // branch. Mutation runs additionally leave .stryker-tmp/sandbox-*/
-      // copies with @ts-nocheck injected. CI never sees any of this (fresh
-      // checkout, no worktrees), so it only ever breaks local runs.
+      // branch. CI never sees any of this (fresh checkout, no worktrees), so
+      // it only ever breaks local runs.
       "**/.claude/**",
       "**/.pnpm-store/**",
-      "**/.stryker-tmp/**",
     ],
     // Integration tests share one real test database, and TWO things depend on
     // files not interleaving. Both are listed because removing this setting

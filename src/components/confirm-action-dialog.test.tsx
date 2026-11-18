@@ -10,10 +10,9 @@ import { describeActionDialogGuards } from "../../test/action-dialog-guards";
  * This file is the harness, plus ONE local test. The guards are one property
  * held by two components, not two descriptions free to drift — but the
  * hidden-fields test below stays here rather than moving into the helper,
- * because it exists to kill a specific mutant in THIS component
- * (`confirm-action-dialog.tsx` is in the `mutate` list; `form-dialog.tsx` is
- * not), and the mutation score is measured against it. Worth revisiting if
- * FormDialog is ever added to that list.
+ * because it was written to kill a specific mutant in THIS component, found
+ * when `confirm-action-dialog.tsx` was under mutation testing (issue #12;
+ * since removed — docs/RUNBOOK.md) and `form-dialog.tsx` was not.
  */
 describeActionDialogGuards("ConfirmActionDialog", {
   element: (action) => (
@@ -60,8 +59,9 @@ describe("the form carries its hidden fields", () => {
     // (ArrowFunction at confirm-action-dialog.tsx, `() => undefined`), and it
     // is a 1 -> 0 mutation. Nothing in the mutant set can render a SECOND
     // hidden input, so the count assertion had no mutant of its own to kill;
-    // this selector kills the same mutant. Re-run scoped if that line changes:
-    //   pnpm exec stryker run --mutate 'src/components/confirm-action-dialog.tsx'
+    // this selector kills the same mutant. If that line changes, red-prove by
+    // hand: replace the hidden-field map's callback with `() => undefined`
+    // and watch this test fail.
     const user = userEvent.setup();
     render(
       <ConfirmActionDialog

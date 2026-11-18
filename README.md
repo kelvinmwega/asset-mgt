@@ -50,7 +50,6 @@ Resend key in `.env`.
 | `pnpm dev` / `pnpm build` / `pnpm start`                  | Next.js dev / production build / serve                                                               |
 | `pnpm lint` / `pnpm typecheck`                            | ESLint (flat config) / `tsc --noEmit`                                                                |
 | `pnpm test`                                               | Vitest. Real-DB integration tests run only when `TEST_DATABASE_URL` is set — with it unset they skip |
-| `pnpm test:mutation`                                      | Stryker over the guard-bearing modules (requires `TEST_DATABASE_URL`)                                |
 | `pnpm db:migrate` / `pnpm db:deploy` / `pnpm db:generate` | Prisma migrate dev / deploy / generate                                                               |
 | `pnpm db:seed` / `pnpm db:seed:reference`                 | Seed the first admin + staff, then categories and sites                                              |
 | `pnpm db:import <file.xlsx>`                              | Import an existing register. Dry run by default; `--commit --batch=<id>` writes                      |
