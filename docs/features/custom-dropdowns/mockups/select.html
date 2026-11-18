@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Select mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Tokens copied from src/app/globals.css (:root and .dark). */
+.light {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --input-fill: transparent;
+  --input-fill-hover: oklch(0.97 0 0);
+  --scrim: oklch(0 0 0 / 0.5);
+  --st-stock: oklch(0.48 0.12 155); --st-stock-bg: oklch(0.95 0.035 155);
+  --shadow: 0 4px 12px oklch(0 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.06);
+}
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --input-fill: oklch(1 0 0 / 0.045);
+  --input-fill-hover: oklch(1 0 0 / 0.075);
+  --scrim: oklch(0 0 0 / 0.6);
+  --st-stock: oklch(0.8 0.14 155); --st-stock-bg: oklch(0.32 0.05 155);
+  --shadow: 0 8px 24px oklch(0 0 0 / 0.45), 0 1px 2px oklch(0 0 0 / 0.3);
+}
+/* One control-height rule for every form control: 36px, 44px on a coarse pointer.
+     .coarse simulates the coarse-pointer result inside a phone illustration. */
+:root {
+  --radius: 0.625rem;
+  --r-sm: calc(var(--radius) - 4px);
+  --r-md: calc(var(--radius) - 2px);
+  --r-lg: var(--radius);
+  --control-h: 36px;
+  --row-h: 32px;
+}
+@media (pointer: coarse) {
+  :root {
+    --control-h: 44px;
+    --row-h: 44px;
+  }
+}
+.coarse {
+  --control-h: 44px;
+  --row-h: 44px;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: Geist, ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  background: oklch(0.5 0 0);
+}
+.mark {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: oklch(0.85 0.17 85);
+  color: oklch(0.2 0 0);
+  font:
+    600 12px/1.4 Geist,
+    sans-serif;
+  padding: 6px 16px;
+  text-align: center;
+}
+.frames {
+  display: grid;
+  gap: 1px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 1100px) {
+  .frames {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.frame {
+  background: var(--background);
+  color: var(--foreground);
+  padding: 28px 24px 40px;
+  min-width: 0;
+}
+.frame > h1 {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  margin: 0 0 20px;
+}
+h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+h3 {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 32px 0 12px;
+}
+.note {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin: 6px 0 0;
+  max-width: 60ch;
+}
+.label,
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.field {
+  min-width: 0;
+}
+.input,
+.trigger {
+  height: var(--control-h);
+  width: 100%;
+  border: 1px solid var(--input);
+  border-radius: var(--r-md);
+  background: var(--input-fill);
+  color: var(--foreground);
+  font: inherit;
+  padding: 0 12px;
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.05);
+}
+.input::placeholder {
+  color: var(--muted-foreground);
+}
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+.trigger .val {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ph {
+  color: var(--muted-foreground);
+}
+svg.i {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--muted-foreground);
+}
+.trigger.hover {
+  background: var(--input-fill-hover);
+}
+.trigger.focus,
+.trigger.open {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
+}
+.trigger.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.trigger.invalid {
+  border-color: var(--destructive);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--destructive) 20%, transparent);
+}
+.err {
+  font-size: 12px;
+  color: var(--destructive);
+  margin: 6px 0 0;
+}
+.anchor {
+  position: relative;
+}
+.panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 10;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 4px;
+  box-shadow: var(--shadow);
+  max-height: 288px;
+  overflow: auto;
+}
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: var(--row-h);
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+  overflow-wrap: anywhere;
+}
+.item.hl {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.item.empty {
+  color: var(--muted-foreground);
+}
+/* Muted text fails AA on the accent fill in light (4.3:1), so secondary text in a highlighted row takes the row colour. */
+.item.hl.empty,
+.item.hl .ref {
+  color: var(--accent-foreground);
+}
+.sep {
+  height: 1px;
+  background: var(--border);
+  margin: 4px -4px;
+}
+.btn {
+  height: var(--control-h);
+  padding: 0 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--input);
+  background: var(--input-fill);
+  color: var(--foreground);
+  font:
+    500 14px Geist,
+    sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn.primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+.btn.ghost {
+  border-color: transparent;
+  background: transparent;
+}
+.link {
+  color: var(--muted-foreground);
+  text-decoration: underline;
+  font-size: 14px;
+  padding: 0 4px;
+  height: var(--control-h);
+  display: inline-flex;
+  align-items: center;
+}
+.ref {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.phone {
+  width: 390px;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  background: var(--background);
+}
+.keys {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 12px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-top: 12px;
+  align-items: start;
+}
+kbd {
+  justify-self: start;
+  font:
+    500 11px "Geist Mono",
+    monospace;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--foreground);
+}
+@media (max-width: 640px) {
+  .frame {
+    padding: 20px 16px 32px;
+  }
+}
+
+  .form { display: flex; flex-direction: column; gap: 12px; max-width: 576px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px 12px; }
+  .cap { font-size: 12px; color: var(--muted-foreground); margin-top: 6px; }
+  .filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+  .f-search { width: 288px; } .f-sel { width: 176px; }
+  .legend { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 12px; color: var(--muted-foreground); }
+  .legend b { color: var(--foreground); font-weight: 500; }
+  .stack { display: flex; flex-direction: column; gap: 12px; }
+  .phone-actions { display: flex; gap: 8px; align-items: center; }
+  .spacer-panel { height: 236px; } .spacer-phone { height: 200px; }
+  .item .tick { color: currentColor; }
+  @media (max-width: 640px) { .row2 { grid-template-columns: 1fr; } .f-search, .f-sel { width: 100%; } }
+</style>
+</head>
+<body>
+<!--
+  Provenance
+  slug: custom-dropdowns
+  spec: docs/features/custom-dropdowns/DESIGN-SPEC.md
+  date: 2026-11-18T22:14:48Z (revised after critique 2026-11-18T22:25:46Z)
+  surface: dropdown controls across the app (Select, short fixed lists)
+  mode: Operate
+  dials: V3 / M3 / D5, source taste §1.A "redesign - preserve"
+  icons: lucide (lucide-react 1.28.0): chevron-down, check; paths copied from node_modules, not drawn
+  layers: taste f7493a5 · Impeccable 4.5.2 (engine 0.1.14, product schema 1) · frontend-design@claude-plugins-official 1.1.1
+  tokens: src/app/globals.css (:root, .dark)
+  incumbent strings carried as shipped: option labels, dialog titles and descriptions, EventNoteHint, MOVE_LABELS
+-->
+<div class="mark" role="note">Synthetic content. Design mockup, not a real record.</div>
+<div class="frames">
+<section class="frame dark" aria-label="Dark theme">
+  <h1>Dark theme · desktop, then phone</h1>
+
+  <h2>Add asset</h2>
+  <p class="note">Every select fills its field, like the inputs beside it. Width comes from the form grid, never from the longest option.</p>
+  <div class="form" style="margin-top:16px">
+    <div class="field">
+      <label for="d-status">Starting status</label>
+      <button class="trigger" id="d-status" type="button" aria-haspopup="listbox"><span class="val">On order (not yet delivered)</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+    </div>
+    <div class="field">
+      <label for="d-tag">Asset tag</label>
+      <input class="input" id="d-tag">
+    </div>
+    <div class="field">
+      <label for="d-cat">Category</label>
+      <button class="trigger" id="d-cat" type="button" aria-haspopup="listbox" aria-required="true"><span class="val ph">Choose a category</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="d-cond">Condition</label>
+        <button class="trigger" id="d-cond" type="button" aria-haspopup="listbox"><span class="val">Not recorded</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+      </div>
+      <div class="field anchor">
+        <label for="d-site">Site</label>
+        <button class="trigger open" id="d-site" type="button" aria-haspopup="listbox" aria-expanded="true" aria-controls="d-site-list"><span class="val">Main Office</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="panel" role="listbox" id="d-site-list" aria-labelledby="d-site">
+          <div class="item empty" role="option" aria-selected="false">Not recorded</div>
+          <div class="sep" role="separator"></div>
+          <div class="item" role="option" aria-selected="true">Main Office<svg class="i tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div class="item hl" role="option" aria-selected="false">Westlands Annex</div>
+          <div class="item" role="option" aria-selected="false">Field kit store, long-term loans and returns cage</div>
+        </div>
+      </div>
+    </div>
+    <div class="spacer-panel" aria-hidden="true"></div>
+  </div>
+  <p class="note">The panel opens below the trigger (popper), at least the trigger's width, and flips above near the viewport edge. A long option wraps inside the panel; the trigger truncates it with an ellipsis.</p>
+
+  <h3>Trigger states</h3>
+  <div class="strip">
+    <div><button class="trigger" type="button"><span class="val">Good</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="cap">Rest</div></div>
+    <div><button class="trigger hover" type="button"><span class="val">Good</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="cap">Hover</div></div>
+    <div><button class="trigger focus" type="button"><span class="val">Good</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="cap">Keyboard focus</div></div>
+    <div><button class="trigger disabled" type="button" disabled><span class="val">Good</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="cap">Disabled or saving</div></div>
+    <div><button class="trigger invalid" type="button" aria-invalid="true" aria-describedby="d-cat-err"><span class="val ph">Choose a category</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><p class="err" id="d-cat-err">Choose a category.</p></div>
+  </div>
+
+  <h3>Empty choice wording</h3>
+  <div class="legend">
+    <b>Any category</b><span>Filter with no constraint (was "All")</span>
+    <b>Not recorded</b><span>Optional attribute left blank: Condition, Site (Site was "Unassigned")</span>
+    <b>Leave unchanged</b><span>Edit that keeps the current value (repair dialogs)</span>
+    <b>Choose a …</b><span>Required with no default: placeholder text, never an option in the list</span>
+  </div>
+
+  <h3>Keyboard</h3>
+  <div class="keys">
+    <kbd>Enter</kbd><span>open, highlight the selected option</span>
+    <kbd>↑ ↓</kbd><span>move the highlight</span>
+    <kbd>A–Z</kbd><span>jump to the next option starting with the typed letters</span>
+    <kbd>Enter</kbd><span>choose, close, focus back on the trigger</span>
+    <kbd>Esc</kbd><span>close without changing the value</span>
+  </div>
+
+  <h3>Register filters</h3>
+  <div class="filters">
+    <div class="f-search"><label for="d-q">Search</label><input class="input" id="d-q" placeholder="Tag, serial, make, model, category"></div>
+    <div class="f-sel"><label for="d-fc">Category</label><button class="trigger" id="d-fc" type="button" aria-haspopup="listbox"><span class="val">Any category</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
+    <div class="f-sel"><label for="d-fs">Site</label><button class="trigger" id="d-fs" type="button" aria-haspopup="listbox"><span class="val">Any site</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
+    <button class="btn" type="button">Filter</button><span class="link">Clear</span>
+  </div>
+  <p class="note">Both filter selects share one fixed width, so the row does not shift as category or site names change.</p>
+
+  <h3>Phone, 390 wide, coarse pointer</h3>
+  <div class="phone coarse">
+    <div class="stack">
+      <div><label for="d-pq">Search</label><input class="input" id="d-pq" placeholder="Tag, serial, make, model, category"></div>
+      <div class="anchor"><label for="d-pc">Category</label><button class="trigger open" id="d-pc" type="button" aria-haspopup="listbox" aria-expanded="true" aria-controls="d-pc-list"><span class="val">Any category</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="panel" role="listbox" id="d-pc-list" aria-labelledby="d-pc">
+          <div class="item empty" role="option" aria-selected="true">Any category<svg class="i tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div class="sep" role="separator"></div>
+          <div class="item hl" role="option" aria-selected="false">Laptops</div>
+          <div class="item" role="option" aria-selected="false">Mobile Phones</div>
+          <div class="item" role="option" aria-selected="false">User Devices</div>
+        </div>
+      </div>
+      <div class="spacer-phone" aria-hidden="true"></div>
+      <div class="phone-actions"><button class="btn" type="button">Filter</button><span class="link">Clear</span></div>
+    </div>
+  </div>
+  <p class="note">On a coarse pointer every form control is 44px: inputs, buttons, triggers and option rows alike.</p>
+</section>
+<section class="frame light" aria-label="Light theme">
+  <h1>Light theme · desktop, then phone</h1>
+
+  <h2>Add asset</h2>
+  <p class="note">Every select fills its field, like the inputs beside it. Width comes from the form grid, never from the longest option.</p>
+  <div class="form" style="margin-top:16px">
+    <div class="field">
+      <label for="l-status">Starting status</label>
+      <button class="trigger" id="l-status" type="button" aria-haspopup="listbox"><span class="val">On order (not yet delivered)</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+    </div>
+    <div class="field">
+      <label for="l-tag">Asset tag</label>
+      <input class="input" id="l-tag">
+    </div>
+    <div class="field">
+      <label for="l-cat">Category</label>
+      <button class="trigger" id="l-cat" type="button" aria-haspopup="listbox" aria-required="true"><span class="val ph">Choose a category</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="l-cond">Condition</label>
+        <button class="trigger" id="l-cond" type="button" aria-haspopup="listbox"><span class="val">Not recorded</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+      </div>
+      <div class="field anchor">
+        <label for="l-site">Site</label>
+        <button class="trigger open" id="l-site" type="button" aria-haspopup="listbox" aria-expanded="true" aria-controls="l-site-list"><span class="val">Main Office</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="panel" role="listbox" id="l-site-list" aria-labelledby="l-site">
+          <div class="item empty" role="option" aria-selected="false">Not recorded</div>
+          <div class="sep" role="separator"></div>
+          <div class="item" role="option" aria-selected="true">Main Office<svg class="i tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div class="item hl" role="option" aria-selected="false">Westlands Annex</div>
+          <div class="item" role="option" aria-selected="false">Field kit store, long-term loans and returns cage</div>
+        </div>
+      </div>
+    </div>
+    <div class="spacer-panel" aria-hidden="true"></div>
+  </div>
+  <p class="note">The panel opens below the trigger (popper), at least the trigger's width, and flips above near the viewport edge. A long option wraps inside the panel; the trigger truncates it with an ellipsis.</p>
+
+  <h3>Trigger states</h3>
+  <div class="strip">
+    <div><button class="trigger" type="button"><span class="val">Good</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="cap">Rest</div></div>
+    <div><button class="trigger hover" type="button"><span class="val">Good</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="cap">Hover</div></div>
+    <div><button class="trigger focus" type="button"><span class="val">Good</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="cap">Keyboard focus</div></div>
+    <div><button class="trigger disabled" type="button" disabled><span class="val">Good</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="cap">Disabled or saving</div></div>
+    <div><button class="trigger invalid" type="button" aria-invalid="true" aria-describedby="l-cat-err"><span class="val ph">Choose a category</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><p class="err" id="l-cat-err">Choose a category.</p></div>
+  </div>
+
+  <h3>Empty choice wording</h3>
+  <div class="legend">
+    <b>Any category</b><span>Filter with no constraint (was "All")</span>
+    <b>Not recorded</b><span>Optional attribute left blank: Condition, Site (Site was "Unassigned")</span>
+    <b>Leave unchanged</b><span>Edit that keeps the current value (repair dialogs)</span>
+    <b>Choose a …</b><span>Required with no default: placeholder text, never an option in the list</span>
+  </div>
+
+  <h3>Keyboard</h3>
+  <div class="keys">
+    <kbd>Enter</kbd><span>open, highlight the selected option</span>
+    <kbd>↑ ↓</kbd><span>move the highlight</span>
+    <kbd>A–Z</kbd><span>jump to the next option starting with the typed letters</span>
+    <kbd>Enter</kbd><span>choose, close, focus back on the trigger</span>
+    <kbd>Esc</kbd><span>close without changing the value</span>
+  </div>
+
+  <h3>Register filters</h3>
+  <div class="filters">
+    <div class="f-search"><label for="l-q">Search</label><input class="input" id="l-q" placeholder="Tag, serial, make, model, category"></div>
+    <div class="f-sel"><label for="l-fc">Category</label><button class="trigger" id="l-fc" type="button" aria-haspopup="listbox"><span class="val">Any category</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
+    <div class="f-sel"><label for="l-fs">Site</label><button class="trigger" id="l-fs" type="button" aria-haspopup="listbox"><span class="val">Any site</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
+    <button class="btn" type="button">Filter</button><span class="link">Clear</span>
+  </div>
+  <p class="note">Both filter selects share one fixed width, so the row does not shift as category or site names change.</p>
+
+  <h3>Phone, 390 wide, coarse pointer</h3>
+  <div class="phone coarse">
+    <div class="stack">
+      <div><label for="l-pq">Search</label><input class="input" id="l-pq" placeholder="Tag, serial, make, model, category"></div>
+      <div class="anchor"><label for="l-pc">Category</label><button class="trigger open" id="l-pc" type="button" aria-haspopup="listbox" aria-expanded="true" aria-controls="l-pc-list"><span class="val">Any category</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="panel" role="listbox" id="l-pc-list" aria-labelledby="l-pc">
+          <div class="item empty" role="option" aria-selected="true">Any category<svg class="i tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div class="sep" role="separator"></div>
+          <div class="item hl" role="option" aria-selected="false">Laptops</div>
+          <div class="item" role="option" aria-selected="false">Mobile Phones</div>
+          <div class="item" role="option" aria-selected="false">User Devices</div>
+        </div>
+      </div>
+      <div class="spacer-phone" aria-hidden="true"></div>
+      <div class="phone-actions"><button class="btn" type="button">Filter</button><span class="link">Clear</span></div>
+    </div>
+  </div>
+  <p class="note">On a coarse pointer every form control is 44px: inputs, buttons, triggers and option rows alike.</p>
+</section>
+</div>
+</body>
+</html>

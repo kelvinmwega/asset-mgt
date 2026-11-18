@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Person picker mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Tokens copied from src/app/globals.css (:root and .dark). */
+.light {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --input-fill: transparent;
+  --input-fill-hover: oklch(0.97 0 0);
+  --scrim: oklch(0 0 0 / 0.5);
+  --st-stock: oklch(0.48 0.12 155); --st-stock-bg: oklch(0.95 0.035 155);
+  --shadow: 0 4px 12px oklch(0 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.06);
+}
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --input-fill: oklch(1 0 0 / 0.045);
+  --input-fill-hover: oklch(1 0 0 / 0.075);
+  --scrim: oklch(0 0 0 / 0.6);
+  --st-stock: oklch(0.8 0.14 155); --st-stock-bg: oklch(0.32 0.05 155);
+  --shadow: 0 8px 24px oklch(0 0 0 / 0.45), 0 1px 2px oklch(0 0 0 / 0.3);
+}
+/* One control-height rule for every form control: 36px, 44px on a coarse pointer.
+     .coarse simulates the coarse-pointer result inside a phone illustration. */
+:root {
+  --radius: 0.625rem;
+  --r-sm: calc(var(--radius) - 4px);
+  --r-md: calc(var(--radius) - 2px);
+  --r-lg: var(--radius);
+  --control-h: 36px;
+  --row-h: 32px;
+}
+@media (pointer: coarse) {
+  :root {
+    --control-h: 44px;
+    --row-h: 44px;
+  }
+}
+.coarse {
+  --control-h: 44px;
+  --row-h: 44px;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: Geist, ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  background: oklch(0.5 0 0);
+}
+.mark {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: oklch(0.85 0.17 85);
+  color: oklch(0.2 0 0);
+  font:
+    600 12px/1.4 Geist,
+    sans-serif;
+  padding: 6px 16px;
+  text-align: center;
+}
+.frames {
+  display: grid;
+  gap: 1px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 1100px) {
+  .frames {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.frame {
+  background: var(--background);
+  color: var(--foreground);
+  padding: 28px 24px 40px;
+  min-width: 0;
+}
+.frame > h1 {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  margin: 0 0 20px;
+}
+h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+h3 {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 32px 0 12px;
+}
+.note {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin: 6px 0 0;
+  max-width: 60ch;
+}
+.label,
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.field {
+  min-width: 0;
+}
+.input,
+.trigger {
+  height: var(--control-h);
+  width: 100%;
+  border: 1px solid var(--input);
+  border-radius: var(--r-md);
+  background: var(--input-fill);
+  color: var(--foreground);
+  font: inherit;
+  padding: 0 12px;
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.05);
+}
+.input::placeholder {
+  color: var(--muted-foreground);
+}
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+.trigger .val {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ph {
+  color: var(--muted-foreground);
+}
+svg.i {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--muted-foreground);
+}
+.trigger.hover {
+  background: var(--input-fill-hover);
+}
+.trigger.focus,
+.trigger.open {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
+}
+.trigger.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.trigger.invalid {
+  border-color: var(--destructive);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--destructive) 20%, transparent);
+}
+.err {
+  font-size: 12px;
+  color: var(--destructive);
+  margin: 6px 0 0;
+}
+.anchor {
+  position: relative;
+}
+.panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 10;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 4px;
+  box-shadow: var(--shadow);
+  max-height: 288px;
+  overflow: auto;
+}
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: var(--row-h);
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+  overflow-wrap: anywhere;
+}
+.item.hl {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.item.empty {
+  color: var(--muted-foreground);
+}
+/* Muted text fails AA on the accent fill in light (4.3:1), so secondary text in a highlighted row takes the row colour. */
+.item.hl.empty,
+.item.hl .ref {
+  color: var(--accent-foreground);
+}
+.sep {
+  height: 1px;
+  background: var(--border);
+  margin: 4px -4px;
+}
+.btn {
+  height: var(--control-h);
+  padding: 0 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--input);
+  background: var(--input-fill);
+  color: var(--foreground);
+  font:
+    500 14px Geist,
+    sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn.primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+.btn.ghost {
+  border-color: transparent;
+  background: transparent;
+}
+.link {
+  color: var(--muted-foreground);
+  text-decoration: underline;
+  font-size: 14px;
+  padding: 0 4px;
+  height: var(--control-h);
+  display: inline-flex;
+  align-items: center;
+}
+.ref {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.phone {
+  width: 390px;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  background: var(--background);
+}
+.keys {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 12px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-top: 12px;
+  align-items: start;
+}
+kbd {
+  justify-self: start;
+  font:
+    500 11px "Geist Mono",
+    monospace;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--foreground);
+}
+@media (max-width: 640px) {
+  .frame {
+    padding: 20px 16px 32px;
+  }
+}
+
+  .scrim { background: var(--scrim); border-radius: 12px; padding: 32px 16px 48px; display: flex; justify-content: center; }
+  .dialog { width: 100%; max-width: 448px; background: var(--background); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 16px; }
+  .dialog h2 { font-size: 18px; font-weight: 600; margin: 0; }
+  .desc { font-size: 14px; color: var(--muted-foreground); margin: 6px 0 0; }
+  .trigger .who { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+  .trigger .who span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .panel.cmd { padding: 0; overflow: hidden; max-height: none; }
+  .search { display: flex; align-items: center; gap: 8px; padding: 0 12px; min-height: var(--control-h); border-bottom: 1px solid var(--border); }
+  .search.boxed { border: 1px solid var(--ring); border-radius: var(--r-md); box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent); }
+  .q { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--foreground); font: inherit; padding: 8px 0; }
+  .q::placeholder { color: var(--muted-foreground); }
+  .list { padding: 4px; max-height: 288px; overflow: auto; }
+  .list.inline { max-height: min(264px, 40dvh); border: 1px solid var(--border); border-radius: var(--r-lg); margin-top: 6px; }
+  .item .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .tick { color: currentColor; }
+  mark.m { background: none; color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+  .count { font-size: 12px; color: var(--muted-foreground); padding: 6px 12px; border-top: 1px solid var(--border); }
+  .inline-pick .count { border-top: 0; padding: 6px 2px 0; }
+  .none { padding: 16px 12px; text-align: center; font-size: 14px; color: var(--muted-foreground); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .btn.sm { height: 32px; font-size: 13px; text-decoration: underline; }
+  .hint { font-size: 12px; color: var(--muted-foreground); margin: 6px 0 0; }
+  .actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .row { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px 16px; align-items: start; }
+  .mini .panel { position: static; }
+  .spacer { height: 268px; }
+  .dialog.sheet { padding: 20px 16px; box-shadow: none; }
+  .actions.sticky { border-top: 1px solid var(--border); padding-top: 12px; }
+</style>
+</head>
+<body>
+<!--
+  Provenance
+  slug: custom-dropdowns
+  spec: docs/features/custom-dropdowns/DESIGN-SPEC.md
+  date: 2026-11-18T22:14:48Z (revised after critique 2026-11-18T22:25:46Z)
+  surface: dropdown controls across the app (Combobox, the person picker in "Assign this asset")
+  mode: Operate
+  dials: V3 / M3 / D5, source taste §1.A "redesign - preserve"
+  icons: lucide (lucide-react 1.28.0): chevrons-up-down, search, check; paths copied from node_modules, not drawn
+  layers: taste f7493a5 · Impeccable 4.5.2 (engine 0.1.14, product schema 1) · frontend-design@claude-plugins-official 1.1.1
+  tokens: src/app/globals.css (:root, .dark)
+  incumbent strings carried as shipped: option labels, dialog titles and descriptions, EventNoteHint, MOVE_LABELS
+-->
+<div class="mark" role="note">Synthetic content. Names and employee refs are invented. Design mockup, not a real record.</div>
+<div class="frames">
+<section class="frame dark" aria-label="Dark theme">
+  <h1>Dark theme · Assign this asset, desktop, filtering</h1>
+  <div class="scrim">
+    <div class="dialog" role="dialog" aria-labelledby="d-t">
+      <div>
+        <h2 id="d-t">Assign this asset</h2>
+        <p class="desc">Who is taking it. The assignment records the holder — the register answers that question from here, not from a note.</p>
+      </div>
+      <div class="anchor">
+        <label for="d-trig">Assign to</label>
+        <button class="trigger open" id="d-trig" type="button" aria-haspopup="listbox" aria-expanded="true"><span class="ph">Choose a person</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></button>
+        <div class="panel cmd">
+          <div class="search"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><input class="q" value="wa" role="combobox" aria-label="Search people" aria-expanded="true" aria-controls="d-list" aria-autocomplete="list" aria-activedescendant="d-o1"></div>
+          <div class="list" role="listbox" id="d-list" aria-label="People">
+            <div class="item hl" role="option" id="d-o1" aria-selected="false"><span class="nm"><mark class="m">Wa</mark>njiru Kamau</span><span class="ref">EMP-0142</span></div>
+            <div class="item" role="option" aria-selected="false"><span class="nm">Daniel <mark class="m">Wa</mark>fula</span><span class="ref">EMP-0087</span></div>
+            <div class="item" role="option" aria-selected="false"><span class="nm">Edwin <mark class="m">Wa</mark>weru</span></div>
+            <div class="item" role="option" aria-selected="false"><span class="nm">Grace Mu<mark class="m">wa</mark>ngi</span><span class="ref">EMP-0203</span></div>
+          </div>
+          <div class="count" aria-live="polite">4 of 71 people</div>
+        </div>
+      </div>
+      <div class="spacer" aria-hidden="true"></div>
+      <div>
+        <label for="d-n">Notes</label>
+        <input class="input" id="d-n">
+        <p class="hint">Never personal data: this lands in the permanent event log, is visible to all staff, and cannot be edited or removed. Describe the asset, not a person. Who holds the asset is already recorded by the assignment itself.</p>
+      </div>
+      <div class="actions"><button class="btn" type="button">Cancel</button><button class="btn primary" type="button">Assign</button></div>
+    </div>
+  </div>
+  <p class="note">Typing filters by name or employee ref, anywhere in the string. The search field owns the combobox role; arrows move the highlight, Enter chooses, Esc closes the list before it closes the dialog. The up-down chevron marks a searchable picker; a plain chevron marks a fixed list.</p>
+
+  <h3>Other states</h3>
+  <div class="row">
+    <div class="mini">
+      <span class="label">Chosen</span>
+      <button class="trigger" type="button" aria-haspopup="listbox"><span class="who"><span>Wanjiru Kamau</span><span class="ref">EMP-0142</span></span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></button>
+    </div>
+    <div class="mini">
+      <span class="label">Assign pressed with nobody chosen</span>
+      <button class="trigger invalid" type="button" aria-haspopup="listbox" aria-invalid="true" aria-describedby="d-perr"><span class="ph">Choose a person</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></button>
+      <p class="err" id="d-perr">Choose a person.</p>
+    </div>
+    <div class="mini">
+      <span class="label">Reopened, chosen person ticked</span>
+      <div class="panel cmd">
+        <div class="search"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><input class="q" placeholder="Search by name or employee ref" role="combobox" aria-label="Search people" aria-expanded="true"></div>
+        <div class="list" role="listbox" aria-label="People">
+          <div class="item" role="option" aria-selected="false"><span class="nm">Abdi Hassan</span><span class="ref">EMP-0011</span></div>
+          <div class="item hl" role="option" aria-selected="true"><span class="nm">Wanjiru Kamau</span><span class="ref">EMP-0142</span><svg class="i tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+        </div>
+      </div>
+    </div>
+    <div class="mini">
+      <span class="label">Two people share a name</span>
+      <div class="panel cmd">
+        <div class="search"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><input class="q" value="otieno" role="combobox" aria-label="Search people" aria-expanded="true"></div>
+        <div class="list" role="listbox" aria-label="People">
+          <div class="item hl" role="option" aria-selected="false"><span class="nm">John <mark class="m">Otieno</mark></span><span class="ref">EMP-0310</span></div>
+          <div class="item" role="option" aria-selected="false"><span class="nm">John <mark class="m">Otieno</mark></span><span class="ref">No ref</span></div>
+        </div>
+        <div class="count">2 of 71 people</div>
+      </div>
+      <p class="note">"No ref" appears only when a name repeats in the list, so two holders are never indistinguishable.</p>
+    </div>
+    <div class="mini">
+      <span class="label">No match</span>
+      <div class="panel cmd">
+        <div class="search"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><input class="q" value="zq" role="combobox" aria-label="Search people" aria-expanded="true"></div>
+        <div class="none" role="status">No one matches "zq".<button class="btn ghost sm" type="button">Clear search</button></div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Phone, 390 wide, coarse pointer: the list opens inside the dialog</h3>
+  <div class="phone coarse">
+    <div class="dialog sheet" role="dialog" aria-labelledby="d-pt">
+      <div>
+        <h2 id="d-pt">Assign this asset</h2>
+        <p class="desc">Who is taking it. The assignment records the holder — the register answers that question from here, not from a note.</p>
+      </div>
+      <div class="inline-pick">
+        <label for="d-pq">Assign to</label>
+        <div class="search boxed"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><input class="q" id="d-pq" value="wa" role="combobox" aria-expanded="true" aria-controls="d-plist" aria-autocomplete="list"></div>
+        <div class="list inline" role="listbox" id="d-plist" aria-label="People">
+          <div class="item hl" role="option" aria-selected="false"><span class="nm"><mark class="m">Wa</mark>njiru Kamau</span><span class="ref">EMP-0142</span></div>
+          <div class="item" role="option" aria-selected="false"><span class="nm">Daniel <mark class="m">Wa</mark>fula</span><span class="ref">EMP-0087</span></div>
+          <div class="item" role="option" aria-selected="false"><span class="nm">Edwin <mark class="m">Wa</mark>weru</span></div>
+          <div class="item" role="option" aria-selected="false"><span class="nm">Grace Mu<mark class="m">wa</mark>ngi</span><span class="ref">EMP-0203</span></div>
+        </div>
+        <div class="count" aria-live="polite">4 of 71 people</div>
+      </div>
+      <div class="actions sticky"><button class="btn" type="button">Cancel</button><button class="btn primary" type="button">Assign</button></div>
+    </div>
+  </div>
+  <p class="note">Below 640px the search field and list render in the dialog body, not a floating layer. The list height is capped to the visible viewport, so the actions stay above the soft keyboard. Choosing a person collapses the list back to the chosen trigger, and the Notes field scrolls into view below it.</p>
+</section>
+<section class="frame light" aria-label="Light theme">
+  <h1>Light theme · Assign this asset, desktop, filtering</h1>
+  <div class="scrim">
+    <div class="dialog" role="dialog" aria-labelledby="l-t">
+      <div>
+        <h2 id="l-t">Assign this asset</h2>
+        <p class="desc">Who is taking it. The assignment records the holder — the register answers that question from here, not from a note.</p>
+      </div>
+      <div class="anchor">
+        <label for="l-trig">Assign to</label>
+        <button class="trigger open" id="l-trig" type="button" aria-haspopup="listbox" aria-expanded="true"><span class="ph">Choose a person</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></button>
+        <div class="panel cmd">
+          <div class="search"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><input class="q" value="wa" role="combobox" aria-label="Search people" aria-expanded="true" aria-controls="l-list" aria-autocomplete="list" aria-activedescendant="l-o1"></div>
+          <div class="list" role="listbox" id="l-list" aria-label="People">
+            <div class="item hl" role="option" id="l-o1" aria-selected="false"><span class="nm"><mark class="m">Wa</mark>njiru Kamau</span><span class="ref">EMP-0142</span></div>
+            <div class="item" role="option" aria-selected="false"><span class="nm">Daniel <mark class="m">Wa</mark>fula</span><span class="ref">EMP-0087</span></div>
+            <div class="item" role="option" aria-selected="false"><span class="nm">Edwin <mark class="m">Wa</mark>weru</span></div>
+            <div class="item" role="option" aria-selected="false"><span class="nm">Grace Mu<mark class="m">wa</mark>ngi</span><span class="ref">EMP-0203</span></div>
+          </div>
+          <div class="count" aria-live="polite">4 of 71 people</div>
+        </div>
+      </div>
+      <div class="spacer" aria-hidden="true"></div>
+      <div>
+        <label for="l-n">Notes</label>
+        <input class="input" id="l-n">
+        <p class="hint">Never personal data: this lands in the permanent event log, is visible to all staff, and cannot be edited or removed. Describe the asset, not a person. Who holds the asset is already recorded by the assignment itself.</p>
+      </div>
+      <div class="actions"><button class="btn" type="button">Cancel</button><button class="btn primary" type="button">Assign</button></div>
+    </div>
+  </div>
+  <p class="note">Typing filters by name or employee ref, anywhere in the string. The search field owns the combobox role; arrows move the highlight, Enter chooses, Esc closes the list before it closes the dialog. The up-down chevron marks a searchable picker; a plain chevron marks a fixed list.</p>
+
+  <h3>Other states</h3>
+  <div class="row">
+    <div class="mini">
+      <span class="label">Chosen</span>
+      <button class="trigger" type="button" aria-haspopup="listbox"><span class="who"><span>Wanjiru Kamau</span><span class="ref">EMP-0142</span></span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></button>
+    </div>
+    <div class="mini">
+      <span class="label">Assign pressed with nobody chosen</span>
+      <button class="trigger invalid" type="button" aria-haspopup="listbox" aria-invalid="true" aria-describedby="l-perr"><span class="ph">Choose a person</span><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></button>
+      <p class="err" id="l-perr">Choose a person.</p>
+    </div>
+    <div class="mini">
+      <span class="label">Reopened, chosen person ticked</span>
+      <div class="panel cmd">
+        <div class="search"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><input class="q" placeholder="Search by name or employee ref" role="combobox" aria-label="Search people" aria-expanded="true"></div>
+        <div class="list" role="listbox" aria-label="People">
+          <div class="item" role="option" aria-selected="false"><span class="nm">Abdi Hassan</span><span class="ref">EMP-0011</span></div>
+          <div class="item hl" role="option" aria-selected="true"><span class="nm">Wanjiru Kamau</span><span class="ref">EMP-0142</span><svg class="i tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></div>
+        </div>
+      </div>
+    </div>
+    <div class="mini">
+      <span class="label">Two people share a name</span>
+      <div class="panel cmd">
+        <div class="search"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><input class="q" value="otieno" role="combobox" aria-label="Search people" aria-expanded="true"></div>
+        <div class="list" role="listbox" aria-label="People">
+          <div class="item hl" role="option" aria-selected="false"><span class="nm">John <mark class="m">Otieno</mark></span><span class="ref">EMP-0310</span></div>
+          <div class="item" role="option" aria-selected="false"><span class="nm">John <mark class="m">Otieno</mark></span><span class="ref">No ref</span></div>
+        </div>
+        <div class="count">2 of 71 people</div>
+      </div>
+      <p class="note">"No ref" appears only when a name repeats in the list, so two holders are never indistinguishable.</p>
+    </div>
+    <div class="mini">
+      <span class="label">No match</span>
+      <div class="panel cmd">
+        <div class="search"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><input class="q" value="zq" role="combobox" aria-label="Search people" aria-expanded="true"></div>
+        <div class="none" role="status">No one matches "zq".<button class="btn ghost sm" type="button">Clear search</button></div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Phone, 390 wide, coarse pointer: the list opens inside the dialog</h3>
+  <div class="phone coarse">
+    <div class="dialog sheet" role="dialog" aria-labelledby="l-pt">
+      <div>
+        <h2 id="l-pt">Assign this asset</h2>
+        <p class="desc">Who is taking it. The assignment records the holder — the register answers that question from here, not from a note.</p>
+      </div>
+      <div class="inline-pick">
+        <label for="l-pq">Assign to</label>
+        <div class="search boxed"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><input class="q" id="l-pq" value="wa" role="combobox" aria-expanded="true" aria-controls="l-plist" aria-autocomplete="list"></div>
+        <div class="list inline" role="listbox" id="l-plist" aria-label="People">
+          <div class="item hl" role="option" aria-selected="false"><span class="nm"><mark class="m">Wa</mark>njiru Kamau</span><span class="ref">EMP-0142</span></div>
+          <div class="item" role="option" aria-selected="false"><span class="nm">Daniel <mark class="m">Wa</mark>fula</span><span class="ref">EMP-0087</span></div>
+          <div class="item" role="option" aria-selected="false"><span class="nm">Edwin <mark class="m">Wa</mark>weru</span></div>
+          <div class="item" role="option" aria-selected="false"><span class="nm">Grace Mu<mark class="m">wa</mark>ngi</span><span class="ref">EMP-0203</span></div>
+        </div>
+        <div class="count" aria-live="polite">4 of 71 people</div>
+      </div>
+      <div class="actions sticky"><button class="btn" type="button">Cancel</button><button class="btn primary" type="button">Assign</button></div>
+    </div>
+  </div>
+  <p class="note">Below 640px the search field and list render in the dialog body, not a floating layer. The list height is capped to the visible viewport, so the actions stay above the soft keyboard. Choosing a person collapses the list back to the chosen trigger, and the Notes field scrolls into view below it.</p>
+</section>
+</div>
+</body>
+</html>
