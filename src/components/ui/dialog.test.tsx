@@ -99,9 +99,14 @@ describe("DialogContent and the visual viewport (G16)", () => {
   /**
    * The content's `top` and `max-height` are bound to the visual viewport, so
    * any transition duration on it slides the dialog on every keyboard resize,
-   * reduced motion included (G14). jsdom computes no transitions; the
-   * real-engine `getAnimations()` readings (Chromium, WebKit) are in commit
-   * 05b54de's message.
+   * reduced motion included (G14). jsdom computes no transitions, so this pins
+   * the class. Real-engine readings, 2026-11-19, Chromium 156 (chromium-1248)
+   * and WebKit 27.2 (webkit-2370), at 390×844 coarse and 1280×800 fine under
+   * reduced motion `reduce` and `no-preference`: emulated visual viewport
+   * moved, `getAnimations()` read on the content two frames later, not after
+   * settling. With `transition-none`, `[]` and `transition-property: none` in
+   * every case; with the former `duration-150` (`all 0.15s`),
+   * `["max-height:150","top:150"]` in every case.
    */
   it("never transitions its geometry as the visual viewport moves (G14)", () => {
     stubVisualViewport(0, 844);
