@@ -16,6 +16,7 @@ vi.mock("../actions", () => ({
   returnAssetFromPerson: vi.fn(async () => ({ ok: true, message: "Back." })),
 }));
 
+import { FormDialog } from "@/components/form-dialog";
 import { CONDITION_LABELS, CONDITION_ORDER } from "@/lib/labels";
 import {
   assignAssetToPerson,
@@ -241,7 +242,35 @@ describe("a move chosen from More", () => {
     await openMore(user);
     await settleLayers();
     await user.click(document.body);
+    await settleLayers();
     expect(screen.queryByRole("menuitem")).toBeNull();
+    expect(more).toHaveFocus();
+  });
+
+  it("makes an owner-held dialog name where focus returns, at the type level", () => {
+    const fields = {
+      title: "Send to repair",
+      description: "It leaves stock.",
+      submitLabel: "Send to repair",
+      pendingLabel: "Sending…",
+      action: async () => null,
+      hiddenFields: { assetId: "a1" },
+    };
+    const returnFocusTo = { current: null };
+    const shapes = [
+      // @ts-expect-error -- an owner-held dialog must name where focus returns.
+      <FormDialog key="a" open onOpenChange={() => {}} {...fields} />,
+      // @ts-expect-error -- a trigger and an owner-held open are exclusive.
+      <FormDialog
+        key="b"
+        trigger={<button type="button">Open</button>}
+        open
+        onOpenChange={() => {}}
+        returnFocusTo={returnFocusTo}
+        {...fields}
+      />,
+    ];
+    expect(shapes).toHaveLength(2);
   });
 
   it("opens a fresh run each time, not the last one's result", async () => {

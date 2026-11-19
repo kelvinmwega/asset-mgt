@@ -168,6 +168,12 @@ export function LifecycleActions({
  * opens (G10). So the menu only records the choice, the dialog is opened from
  * here, and on close it hands focus back to More rather than to a trigger that
  * no longer exists.
+ *
+ * Every way the menu closes hands focus back to More, an outside click
+ * included (G10). Radix does that for Escape and a chosen item, but a
+ * non-modal menu — which an inline one is — skips it after any outside
+ * interaction and leaves focus wherever the click landed, usually <body>.
+ * A chosen move loses nothing by it: its dialog traps focus and takes it.
  */
 function MoreMenu({
   moves,
@@ -188,7 +194,12 @@ function MoreMenu({
             <ChevronDown aria-hidden />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent>
+        <DropdownMenuContent
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            moreRef.current?.focus();
+          }}
+        >
           {moves.map((move, index) => (
             <Fragment key={move}>
               {move === "RETIRE" && index > 0 ? (
