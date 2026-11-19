@@ -96,6 +96,19 @@ describe("DialogContent and the visual viewport (G16)", () => {
     expect(dialog).not.toHaveClass("overflow-hidden");
   });
 
+  /**
+   * The content's `top` and `max-height` are bound to the visual viewport, so
+   * any transition duration on it slides the dialog on every keyboard resize,
+   * reduced motion included (G14). jsdom computes no transitions; the
+   * real-engine `getAnimations()` check is in the story's delivery record.
+   */
+  it("never transitions its geometry as the visual viewport moves (G14)", () => {
+    stubVisualViewport(0, 844);
+    const dialog = renderDialog();
+
+    expect(dialog).toHaveClass("transition-none");
+  });
+
   it("pins the footer to the foot of the scrolling body", () => {
     stubVisualViewport(0, 417);
     renderDialog();
