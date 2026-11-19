@@ -18,9 +18,26 @@ the one `docs/DESIGN.md` §20 already recorded, and it is already half-built:
 | --------------------- | ------------------------------------------------------- |
 | `components.json`     | new-york, `neutral` base, CSS variables, `lucide` icons |
 | `src/app/globals.css` | full light **and** dark OKLCH token sets                |
-| `src/components/ui/`  | button, input, label, select, table — hand-written      |
+| `src/components/ui/`  | see the component table below                           |
 | `src/app/layout.tsx`  | Geist Sans + Geist Mono via `next/font`                 |
-| Radix                 | `@radix-ui/react-slot` only (what `asChild` needs)      |
+| Radix                 | slot, dialog, select, popover, dropdown-menu; plus cmdk |
+
+The primitives in `src/components/ui/`, and what each one sits on:
+
+| Primitive                   | Built on                        | Use it for                                   |
+| --------------------------- | ------------------------------- | -------------------------------------------- |
+| `button`                    | `@radix-ui/react-slot`          | every button, and `asChild` links            |
+| `input`, `label`            | native elements                 | text fields and their labels                 |
+| `table`, `data-card`        | native elements                 | the register's two shapes (§5)               |
+| `status-chip`               | native elements                 | asset status (§6)                            |
+| `dialog`                    | `@radix-ui/react-dialog`        | confirm and form dialogs                     |
+| `form-select`               | `@radix-ui/react-select`        | every choose-one field that posts `FormData` |
+| `combobox` (with `command`) | `@radix-ui/react-popover`, cmdk | the searchable person picker                 |
+| `popover`                   | `@radix-ui/react-popover`       | the combobox panel; the shared panel surface |
+| `dropdown-menu`             | `@radix-ui/react-dropdown-menu` | action menus ("More" on an asset)            |
+
+There is no native `<select>` primitive: a JSX `select` element anywhere under
+`src/` fails `pnpm lint` (`no-restricted-syntax` in `eslint.config.mjs`).
 
 Three properties make it the right call here rather than merely the incumbent:
 
@@ -38,7 +55,7 @@ Three properties make it the right call here rather than merely the incumbent:
 **Rejected without much agony:** MUI and Mantine (runtime-themed, heavy, own
 your markup); Chakra (same, plus a v3 API churn we would be adopting mid-flight);
 plain Tailwind with no primitives (we would rebuild the Radix a11y behaviour by
-hand, badly, and `select.tsx` would grow a listbox). None of these justify
+hand, badly, starting with a listbox for every dropdown). None of these justify
 discarding a token layer that already exists and works.
 
 So the deliverable is **not** a library swap. It is closing four gaps.
