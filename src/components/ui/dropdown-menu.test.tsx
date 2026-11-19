@@ -6,6 +6,12 @@ import { describe, expect, it, vi } from "vitest";
 
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -141,6 +147,27 @@ describe("DropdownMenu", () => {
     expect(screen.queryByRole("menuitem")).not.toBeInTheDocument();
   });
 
+  it("leaves Escape to an open Dialog on a page holding a closed inline menu (G9, G10)", async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    render(
+      <>
+        <MoreMenu inline />
+        <Dialog open onOpenChange={onOpenChange}>
+          <DialogContent>
+            <DialogTitle>Send to repair</DialogTitle>
+            <DialogDescription>It leaves stock.</DialogDescription>
+          </DialogContent>
+        </Dialog>
+      </>,
+    );
+    await settleLayers();
+
+    await user.keyboard("{Escape}");
+
+    expect(onOpenChange.mock.calls).toEqual([[false]]);
+  });
+
   it("gives every row the coarse-pointer height and keeps motion behind motion-safe (G4, G14)", async () => {
     const user = userEvent.setup();
     render(<MoreMenu inline={false} />);
@@ -160,7 +187,7 @@ describe("DropdownMenu", () => {
   });
 
   it("refuses `modal` on an inline menu at the type level", () => {
-    // @ts-expect-error -- an always-mounted modal menu would aria-hide the page.
+    // @ts-expect-error -- an inline menu is non-modal, so `modal` would be ignored.
     const element = <DropdownMenu inline modal />;
     expect(element).toBeTruthy();
   });

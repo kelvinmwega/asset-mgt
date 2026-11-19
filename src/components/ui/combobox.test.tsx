@@ -1,5 +1,5 @@
 import * as React from "react";
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -81,6 +81,7 @@ function emulateNarrowViewport() {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("Combobox", () => {
@@ -298,13 +299,38 @@ describe("Combobox", () => {
         screen.queryByRole("button", { name: "Assign to" }),
       ).not.toBeInTheDocument();
       expect(screen.getByRole("listbox")).toHaveClass(
-        "max-h-[min(264px,40dvh)]",
+        "max-h-[min(264px,40dvh,calc(var(--picker-visible-height,100dvh)*0.4))]",
       );
 
       await user.click(screen.getByRole("option", { name: /Abdi Hassan/ }));
 
       expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Assign to" })).toHaveFocus();
+    });
+  });
+
+  describe("with the soft keyboard up (G16)", () => {
+    it("caps the inline list against the visual viewport, following its resize", async () => {
+      emulateNarrowViewport();
+      const visualViewport = Object.assign(new EventTarget(), { height: 844 });
+      vi.stubGlobal("visualViewport", visualViewport);
+      const user = userEvent.setup();
+      renderInForm();
+
+      await user.click(screen.getByRole("button", { name: "Assign to" }));
+      const list = screen.getByRole("listbox");
+      expect(list.style.getPropertyValue("--picker-visible-height")).toBe(
+        "844px",
+      );
+
+      visualViewport.height = 417;
+      act(() => {
+        visualViewport.dispatchEvent(new Event("resize"));
+      });
+
+      expect(list.style.getPropertyValue("--picker-visible-height")).toBe(
+        "417px",
+      );
     });
   });
 

@@ -31,7 +31,10 @@ const triggerClasses = cn(
 const rowClasses =
   "relative flex min-h-8 w-full cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none [overflow-wrap:anywhere] pointer-coarse:min-h-11";
 
-/** The four empty-choice phrases (G5); the placeholder is never one of them. */
+/**
+ * The empty-choice option labels (G5). Its "Choose a …" placeholder is never
+ * an option, so it is not among them.
+ */
 type EmptyChoiceLabel = `Any ${string}` | "Not recorded" | "Leave unchanged";
 
 type FormSelectOption = { value: string; label: string };

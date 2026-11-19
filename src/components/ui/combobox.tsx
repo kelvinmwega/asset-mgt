@@ -66,6 +66,26 @@ function useIsNarrow() {
   );
 }
 
+function subscribeVisibleHeight(onChange: () => void) {
+  const viewport = window.visualViewport;
+  viewport?.addEventListener("resize", onChange);
+  return () => viewport?.removeEventListener("resize", onChange);
+}
+
+/**
+ * The visual viewport's height, which a soft keyboard shrinks (G16). `dvh`
+ * follows the layout viewport, which iOS Safari and Chrome's default
+ * `resizes-visual` mode leave at full height with the keyboard up, so a
+ * `40dvh` cap alone never moves when the keyboard opens.
+ */
+function useVisibleHeight() {
+  return React.useSyncExternalStore(
+    subscribeVisibleHeight,
+    () => window.visualViewport?.height ?? null,
+    () => null,
+  );
+}
+
 /** Case-insensitive substring on any of the texts — never a prefix or fuzzy score (G7). */
 function matchesQuery(texts: readonly string[], query: string) {
   const needle = query.trim().toLowerCase();
@@ -125,6 +145,7 @@ function Combobox({
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const narrow = useIsNarrow();
+  const visibleHeight = useVisibleHeight();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const restoreFocus = React.useRef(false);
   const { triggerRef, container, locate } =
@@ -200,8 +221,16 @@ function Combobox({
       />
       <CommandList
         className={cn(
-          inline && "mt-1.5 max-h-[min(264px,40dvh)] rounded-lg border",
+          inline &&
+            "mt-1.5 max-h-[min(264px,40dvh,calc(var(--picker-visible-height,100dvh)*0.4))] rounded-lg border",
         )}
+        style={
+          inline && visibleHeight !== null
+            ? ({
+                "--picker-visible-height": `${visibleHeight}px`,
+              } as React.CSSProperties)
+            : undefined
+        }
       >
         {options.map((option) => {
           const secondary =

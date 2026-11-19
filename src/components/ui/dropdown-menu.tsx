@@ -21,11 +21,11 @@ type DropdownMenuProps = Omit<
   ({ inline: true; modal?: never } | { inline?: false; modal?: boolean });
 
 /**
- * `inline` keeps the menu's items in the server-rendered markup: the content is
- * always mounted (closed, it carries the `hidden` attribute), rendered in place
- * rather than portalled, and the menu is non-modal — Radix's modal menu calls
- * `hideOthers` on mount, which on an always-mounted menu would hide the whole
- * page from assistive tech for good. The union makes `modal` unsayable there.
+ * `inline` keeps the menu's items in the server-rendered markup and renders the
+ * open menu in place rather than portalled. An inline menu sits in the page's
+ * flow beside the actions it extends, so it is non-modal: opening it neither
+ * aria-hides those actions nor swallows the next click on them. `modal` would
+ * be ignored there, so the union makes it unsayable.
  */
 function DropdownMenu({
   inline = false,
@@ -52,66 +52,87 @@ function DropdownMenu({
 
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 
+const DormantContext = React.createContext(false);
+
 /**
- * An inline menu is remounted on each open (the `key`), because Radix focuses
- * the first item from its focus scope's mount — an always-mounted scope never
- * mounts again, so a keyboard open would leave focus on the trigger.
- *
- * The closed instance refuses its close-autofocus: its unmount on open would
- * otherwise put focus back on the trigger, and the menu just opened would read
- * that as focus outside and dismiss itself (seen in Chromium on every open).
+ * A closed inline menu renders a static, `hidden` copy of its items, and the
+ * Radix content mounts only while open. Force-mounting the content instead
+ * keeps its DismissableLayer alive for the life of the page, on top of a layer
+ * stack the app's Dialog does not share: its Escape handler marks every Escape
+ * handled while dismissing a menu that is already closed, and the Dialog then
+ * skips its own dismiss, so no Dialog on that page closes on Escape.
  */
 function DropdownMenuContent({
   className,
   align = "start",
   sideOffset = 4,
-  onCloseAutoFocus,
+  children,
   ...props
 }: Omit<
   React.ComponentProps<typeof DropdownMenuPrimitive.Content>,
   "forceMount"
 >) {
   const { inline, open } = React.useContext(MenuModeContext);
-  const dormant = inline && !open;
+  const classes = cn(
+    popupSurface,
+    "min-w-48 origin-(--radix-dropdown-menu-content-transform-origin) p-1",
+    className,
+  );
   const content = (
     <DropdownMenuPrimitive.Content
-      key={inline ? String(open) : undefined}
       data-slot="dropdown-menu-content"
       align={align}
       sideOffset={sideOffset}
-      forceMount={inline ? true : undefined}
-      hidden={dormant}
-      onCloseAutoFocus={(event) => {
-        if (dormant) event.preventDefault();
-        else onCloseAutoFocus?.(event);
-      }}
-      className={cn(
-        popupSurface,
-        "min-w-48 origin-(--radix-dropdown-menu-content-transform-origin) p-1",
-        className,
-      )}
+      className={classes}
       {...props}
-    />
+    >
+      {children}
+    </DropdownMenuPrimitive.Content>
   );
-  return inline ? (
-    content
-  ) : (
-    <DropdownMenuPrimitive.Portal>{content}</DropdownMenuPrimitive.Portal>
+  if (!inline) {
+    return (
+      <DropdownMenuPrimitive.Portal>{content}</DropdownMenuPrimitive.Portal>
+    );
+  }
+  return (
+    <>
+      {open ? null : (
+        <div
+          role="menu"
+          hidden
+          data-slot="dropdown-menu-content"
+          className={classes}
+        >
+          <DormantContext.Provider value>{children}</DormantContext.Provider>
+        </div>
+      )}
+      {content}
+    </>
   );
 }
 
+/** Radix's item needs the open content's context, so the dormant copy draws a plain row. */
 function DropdownMenuItem({
   className,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Item>) {
+  const dormant = React.useContext(DormantContext);
+  const classes = cn(
+    rowClasses,
+    "focus:bg-accent focus:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+    className,
+  );
+  if (dormant) {
+    return (
+      <div role="menuitem" data-slot="dropdown-menu-item" className={classes}>
+        {props.children}
+      </div>
+    );
+  }
   return (
     <DropdownMenuPrimitive.Item
       data-slot="dropdown-menu-item"
-      className={cn(
-        rowClasses,
-        "focus:bg-accent focus:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
-        className,
-      )}
+      className={classes}
       {...props}
     />
   );

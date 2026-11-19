@@ -297,7 +297,7 @@ describe("FormSelect", () => {
     const shapes = [
       // @ts-expect-error -- a required field needs its "Choose a …" placeholder.
       <FormSelect key="a" name="a" options={CATEGORIES} required />,
-      // @ts-expect-error -- "All" is not one of the four empty-choice phrases.
+      // @ts-expect-error -- "All" is not an empty-choice label.
       <FormSelect key="b" name="b" options={CATEGORIES} emptyLabel="All" />,
       <FormSelect
         key="c"
