@@ -86,6 +86,36 @@ function useVisibleHeight() {
   );
 }
 
+/**
+ * Bounds the inline list to 40% of the visual viewport, on top of the list's
+ * own `min(264px, 40dvh)` cap. A flex column with a `min-h-0` child, rather
+ * than a third term in the list's `max-h`, so each element owns one max-height
+ * (frontend-react/one-utility-per-axis).
+ */
+function KeyboardBound({
+  visibleHeight,
+  children,
+}: {
+  visibleHeight: number | null;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      data-slot="combobox-keyboard-bound"
+      className="flex max-h-(--picker-list-bound) flex-col"
+      style={
+        visibleHeight === null
+          ? undefined
+          : ({
+              "--picker-list-bound": `${visibleHeight * 0.4}px`,
+            } as React.CSSProperties)
+      }
+    >
+      {children}
+    </div>
+  );
+}
+
 /** Case-insensitive substring on any of the texts — never a prefix or fuzzy score (G7). */
 function matchesQuery(texts: readonly string[], query: string) {
   const needle = query.trim().toLowerCase();
@@ -202,6 +232,47 @@ function Combobox({
     undefined;
   const inline = narrow;
 
+  const list = (
+    <CommandList
+      className={cn(
+        inline && "mt-1.5 max-h-[min(264px,40dvh)] min-h-0 rounded-lg border",
+      )}
+    >
+      {options.map((option) => {
+        const secondary =
+          option.secondary ??
+          ((labelCounts.get(option.label) ?? 0) > 1
+            ? missingSecondaryLabel
+            : null);
+        return (
+          <CommandItem
+            key={option.value}
+            value={option.value}
+            keywords={searchTexts(option)}
+            onSelect={() => choose(option.value)}
+          >
+            <span className="min-w-0 flex-1 truncate">
+              {highlightMatch(option.label, query)}
+            </span>
+            {secondary ? (
+              <>
+                {" "}
+                <span className="text-muted-foreground group-data-[selected=true]:text-accent-foreground font-mono text-xs whitespace-nowrap">
+                  {option.secondary
+                    ? highlightMatch(option.secondary, query)
+                    : secondary}
+                </span>
+              </>
+            ) : null}
+            {option.value === value ? (
+              <Check className="size-4 shrink-0" aria-hidden />
+            ) : null}
+          </CommandItem>
+        );
+      })}
+    </CommandList>
+  );
+
   const picker = (
     <Command
       label={searchLabel}
@@ -219,52 +290,11 @@ function Combobox({
             "border-ring ring-ring/50 rounded-md border ring-[3px] dark:bg-input/30",
         )}
       />
-      <CommandList
-        className={cn(
-          inline &&
-            "mt-1.5 max-h-[min(264px,40dvh,calc(var(--picker-visible-height,100dvh)*0.4))] rounded-lg border",
-        )}
-        style={
-          inline && visibleHeight !== null
-            ? ({
-                "--picker-visible-height": `${visibleHeight}px`,
-              } as React.CSSProperties)
-            : undefined
-        }
-      >
-        {options.map((option) => {
-          const secondary =
-            option.secondary ??
-            ((labelCounts.get(option.label) ?? 0) > 1
-              ? missingSecondaryLabel
-              : null);
-          return (
-            <CommandItem
-              key={option.value}
-              value={option.value}
-              keywords={searchTexts(option)}
-              onSelect={() => choose(option.value)}
-            >
-              <span className="min-w-0 flex-1 truncate">
-                {highlightMatch(option.label, query)}
-              </span>
-              {secondary ? (
-                <>
-                  {" "}
-                  <span className="text-muted-foreground group-data-[selected=true]:text-accent-foreground font-mono text-xs whitespace-nowrap">
-                    {option.secondary
-                      ? highlightMatch(option.secondary, query)
-                      : secondary}
-                  </span>
-                </>
-              ) : null}
-              {option.value === value ? (
-                <Check className="size-4 shrink-0" aria-hidden />
-              ) : null}
-            </CommandItem>
-          );
-        })}
-      </CommandList>
+      {inline ? (
+        <KeyboardBound visibleHeight={visibleHeight}>{list}</KeyboardBound>
+      ) : (
+        list
+      )}
       <CommandEmpty>
         <div
           role="status"

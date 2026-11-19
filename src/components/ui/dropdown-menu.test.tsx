@@ -105,7 +105,7 @@ describe("DropdownMenu", () => {
     }
   });
 
-  it("opens on a pointer click and returns focus to the trigger on Escape, every time", async () => {
+  it("opens on a pointer click with the first item focused and returns focus to the trigger on Escape, every time", async () => {
     const user = userEvent.setup();
     render(<MoreMenu inline />);
     await settleLayers();
@@ -115,6 +115,9 @@ describe("DropdownMenu", () => {
       await user.click(more);
       await settleLayers();
       expect(screen.getAllByRole("menuitem")).toHaveLength(2);
+      expect(
+        screen.getByRole("menuitem", { name: "Send to repair…" }),
+      ).toHaveFocus();
       await user.keyboard("{Escape}");
       await settleLayers();
       expect(screen.queryByRole("menuitem")).not.toBeInTheDocument();

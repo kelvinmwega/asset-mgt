@@ -55,6 +55,30 @@ const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 const DormantContext = React.createContext(false);
 
 /**
+ * The spec opens every menu on its first item (DESIGN-SPEC.md, Menu "First item
+ * focused"). Radix moves focus there only on a keyboard open; a pointer open
+ * leaves focus on the menu itself, and `DropdownMenu.Content` withholds the
+ * `onEntryFocus` hook that decides it. So the first time the menu itself takes
+ * focus after opening, focus moves on to its first item. Only the first time:
+ * Radix also focuses the menu when the pointer leaves an item, and that must
+ * not snap the highlight back to the top. A layout effect, so the flag is set
+ * before the focus scope's passive effect focuses the menu.
+ */
+function useFirstItemFocus(open: boolean) {
+  const entering = React.useRef(false);
+  React.useLayoutEffect(() => {
+    entering.current = open;
+  }, [open]);
+  return (event: React.FocusEvent<HTMLDivElement>) => {
+    if (!entering.current || event.target !== event.currentTarget) return;
+    entering.current = false;
+    event.currentTarget
+      .querySelector<HTMLElement>('[role="menuitem"]:not([data-disabled])')
+      ?.focus({ preventScroll: true });
+  };
+}
+
+/**
  * A closed inline menu renders a static, `hidden` copy of its items, and the
  * Radix content mounts only while open. Force-mounting the content instead
  * keeps its DismissableLayer alive for the life of the page, on top of a layer
@@ -67,12 +91,14 @@ function DropdownMenuContent({
   align = "start",
   sideOffset = 4,
   children,
+  onFocus,
   ...props
 }: Omit<
   React.ComponentProps<typeof DropdownMenuPrimitive.Content>,
   "forceMount"
 >) {
   const { inline, open } = React.useContext(MenuModeContext);
+  const enterFirstItem = useFirstItemFocus(open);
   const classes = cn(
     popupSurface,
     "min-w-48 origin-(--radix-dropdown-menu-content-transform-origin) p-1",
@@ -85,6 +111,10 @@ function DropdownMenuContent({
       sideOffset={sideOffset}
       className={classes}
       {...props}
+      onFocus={(event) => {
+        onFocus?.(event);
+        enterFirstItem(event);
+      }}
     >
       {children}
     </DropdownMenuPrimitive.Content>

@@ -299,7 +299,7 @@ describe("Combobox", () => {
         screen.queryByRole("button", { name: "Assign to" }),
       ).not.toBeInTheDocument();
       expect(screen.getByRole("listbox")).toHaveClass(
-        "max-h-[min(264px,40dvh,calc(var(--picker-visible-height,100dvh)*0.4))]",
+        "max-h-[min(264px,40dvh)]",
       );
 
       await user.click(screen.getByRole("option", { name: /Abdi Hassan/ }));
@@ -318,9 +318,12 @@ describe("Combobox", () => {
       renderInForm();
 
       await user.click(screen.getByRole("button", { name: "Assign to" }));
-      const list = screen.getByRole("listbox");
-      expect(list.style.getPropertyValue("--picker-visible-height")).toBe(
-        "844px",
+      const bound = screen
+        .getByRole("listbox")
+        .closest<HTMLElement>('[data-slot="combobox-keyboard-bound"]')!;
+      expect(bound).toHaveClass("max-h-(--picker-list-bound)");
+      expect(bound.style.getPropertyValue("--picker-list-bound")).toBe(
+        "337.6px",
       );
 
       visualViewport.height = 417;
@@ -328,8 +331,8 @@ describe("Combobox", () => {
         visualViewport.dispatchEvent(new Event("resize"));
       });
 
-      expect(list.style.getPropertyValue("--picker-visible-height")).toBe(
-        "417px",
+      expect(bound.style.getPropertyValue("--picker-list-bound")).toBe(
+        "166.8px",
       );
     });
   });
