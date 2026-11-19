@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { FormSelect } from "@/components/ui/form-select";
 import { FormDialog } from "@/components/form-dialog";
 import { ROLE_LABELS, ROLE_ORDER } from "@/lib/labels";
 import { createUser } from "./actions";
@@ -47,13 +47,15 @@ export function AddUserForm() {
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="add-role">Role</Label>
-        <Select id="add-role" name="role" defaultValue="STAFF_RO">
-          {ROLE_ORDER.map((role) => (
-            <option key={role} value={role}>
-              {ROLE_LABELS[role]}
-            </option>
-          ))}
-        </Select>
+        <FormSelect
+          id="add-role"
+          name="role"
+          defaultValue="STAFF_RO"
+          options={ROLE_ORDER.map((role) => ({
+            value: role,
+            label: ROLE_LABELS[role],
+          }))}
+        />
       </div>
     </FormDialog>
   );

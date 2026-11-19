@@ -368,4 +368,31 @@ describe.skipIf(!testDatabaseUrl)("admin users page — last signed in", () => {
     // counting it proves the control reached both.
     expect(html.split(`Role for ${email}`).length - 1).toBe(2);
   });
+
+  it("posts each shape's role under `role` from the shared Select, with no visible native select", async () => {
+    const email = await provision("role-select");
+    await db.user.update({
+      where: { email },
+      data: { role: Role.PROCUREMENT },
+    });
+    const html = await renderAsAdmin();
+
+    for (const shape of [rowFor(html, email), cardFor(html, email)]) {
+      const control = shape.slice(0, shape.indexOf('name="role"') + 40);
+      expect(control).toMatch(
+        new RegExp(
+          `data-slot="form-select-trigger" aria-label="Role for ${email}"[^>]*\\bw-full\\b[^>]*>(<span[^>]*>)+Procurement<`,
+        ),
+      );
+      expect(control).toContain(
+        '<input type="hidden" name="role" value="PROCUREMENT"/>',
+      );
+      expect(control).not.toMatch(/\bw-fit\b/);
+    }
+    const visibleOrNamedSelects = (html.match(/<select[^>]*>/g) ?? []).filter(
+      (select) =>
+        !select.includes('aria-hidden="true"') || select.includes("name="),
+    );
+    expect(visibleOrNamedSelects).toEqual([]);
+  });
 });
