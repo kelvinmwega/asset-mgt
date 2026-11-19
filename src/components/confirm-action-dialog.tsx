@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, type ReactNode } from "react";
+import { useActionState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useDialogRun, type DialogOpening } from "@/components/form-dialog";
 
 /**
  * A confirmation dialog wrapped around a server action (AM-09 DESIGN §5).
@@ -52,9 +53,7 @@ import {
  */
 export type ConfirmActionState = { ok: boolean; message: string } | null;
 
-type ConfirmActionDialogProps = {
-  /** The button that opens the dialog. Opens it; submits nothing. */
-  trigger: ReactNode;
+type ConfirmActionDialogProps = DialogOpening & {
   title: string;
   /** What will happen, and what will NOT — most of these delete nothing. */
   description: ReactNode;
@@ -86,25 +85,15 @@ type ConfirmActionDialogProps = {
  * would think to check. The guard is shared, so the fix is too.
  */
 export function ConfirmActionDialog(props: ConfirmActionDialogProps) {
-  const [open, setOpen] = useState(false);
-  const [generation, setGeneration] = useState(0);
+  const run = useDialogRun(props);
 
   return (
     <ConfirmActionDialogRun
-      key={generation}
+      key={run.generation}
       {...props}
-      open={open}
-      // On the way IN, never on the way out: unmounting on close would cut the
-      // close animation and hand Radix a destroyed node to return focus to.
-      onOpenChange={(next) => {
-        // Stryker disable next-line ArithmeticOperator: genuinely equivalent. The
-        // key's only job is to DIFFER from the last one, so React remounts; `- 1`
-        // remounts exactly as reliably as `+ 1`. Nothing observable distinguishes
-        // them, so no test can, and guard 5 rightly passes either way. Direction
-        // is chosen for readability alone.
-        if (next) setGeneration((current) => current + 1);
-        setOpen(next);
-      }}
+      open={run.open}
+      onOpenChange={run.onOpenChange}
+      onCloseAutoFocus={run.onCloseAutoFocus}
     />
   );
 }
@@ -123,10 +112,12 @@ function ConfirmActionDialogRun({
   children,
   open,
   onOpenChange,
-}: ConfirmActionDialogProps & {
+  onCloseAutoFocus,
+}: Omit<ConfirmActionDialogProps, "open" | "onOpenChange" | "returnFocusTo"> & {
   open: boolean;
   /** Asks the owner to open or close. Refused here while the action runs. */
   onOpenChange: (next: boolean) => void;
+  onCloseAutoFocus: (event: Event) => void;
 }) {
   const [state, formAction, pending] = useActionState<
     ConfirmActionState,
@@ -172,9 +163,12 @@ function ConfirmActionDialogRun({
         onOpenChange(next);
       }}
     >
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger === undefined ? null : (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      )}
       <DialogContent
         showClose={!pending}
+        onCloseAutoFocus={onCloseAutoFocus}
         /* Stryker disable BlockStatement,ConditionalExpression: redundant with the onOpenChange refusal above; no test can attribute the proven Escape behaviour to one layer or the other. */
         onEscapeKeyDown={(event) => {
           if (pending) event.preventDefault();
@@ -204,7 +198,7 @@ function ConfirmActionDialogRun({
           {state ? (
             <p
               role="status"
-              /* Stryker disable StringLiteral: Tailwind class names. This repo asserts on roles and text, never on class strings, so a test able to kill these would go red on any design-token rename while catching no behaviour change. What matters here — the result is announced, in place, via role="status" — is guard 4 and is tested. */
+              /* Stryker disable StringLiteral: Tailwind colour class names. No test asserts on this paragraph's classes, and one able to kill these would go red on any design-token rename while catching no behaviour change. What matters here — the result is announced, in place, via role="status" — is guard 4 and is tested. */
               className={
                 state.ok
                   ? "text-muted-foreground text-sm"

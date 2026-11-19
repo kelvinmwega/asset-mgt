@@ -299,7 +299,11 @@ describe.skipIf(!testDatabaseUrl)("asset assignment UI (real DB)", () => {
   //
   // #10 moved every lifecycle form into a dialog, so an offered move is now a
   // TRIGGER rather than an inline form heading, and the trailing ellipsis is
-  // part of the affordance. Same claim, different selector — with one half of it
+  // part of the affordance. The moves behind `More` reach static markup because
+  // that menu renders inline (`DropdownMenu inline`), and while closed it keeps
+  // a hidden static copy of its items in the markup; the Radix content mounts
+  // only while open. A portalled menu would turn the positive assertions below
+  // red, and they must not be loosened to let it. Same claim, different selector — with one half of it
   // relocated: Radix mounts dialog content only once open and portals it, so
   // nothing inside a dialog reaches server-rendered markup. What the return form
   // asks for once opened (both destinations, one action) and what the picker

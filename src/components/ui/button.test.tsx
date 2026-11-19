@@ -33,4 +33,24 @@ describe("Button", () => {
     const link = screen.getByRole("link", { name: "Open register" });
     expect(link).toHaveAttribute("href", "https://example.com/register");
   });
+
+  it("is at least 44px tall on a coarse pointer at every size (G4)", () => {
+    render(
+      <>
+        <Button>Default</Button>
+        <Button size="sm">Small</Button>
+        <Button size="lg">Large</Button>
+        <Button size="icon" aria-label="Icon" />
+      </>,
+    );
+
+    for (const name of ["Default", "Small", "Large"]) {
+      expect(screen.getByRole("button", { name })).toHaveClass(
+        "pointer-coarse:h-11",
+      );
+    }
+    expect(screen.getByRole("button", { name: "Icon" })).toHaveClass(
+      "pointer-coarse:size-11",
+    );
+  });
 });

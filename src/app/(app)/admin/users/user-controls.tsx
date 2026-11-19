@@ -5,7 +5,7 @@ import type { Role } from "@prisma/client";
 import { ROLE_LABELS, ROLE_ORDER } from "@/lib/labels";
 import { Timestamp } from "@/components/timestamp";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import { FormSelect } from "@/components/ui/form-select";
 import { ConfirmActionDialog } from "@/components/confirm-action-dialog";
 import { changeRole, deactivateUser, reactivateUser } from "./actions";
 
@@ -90,6 +90,11 @@ export function SignInCell({
   );
 }
 
+const ROLE_OPTIONS = ROLE_ORDER.map((role) => ({
+  value: role,
+  label: ROLE_LABELS[role],
+}));
+
 /**
  * The role select, its Apply button, and the action's own status message.
  *
@@ -122,19 +127,16 @@ export function RoleForm({
   return (
     <form action={roleAction} className="flex flex-wrap items-center gap-2">
       <input type="hidden" name="userId" value={user.id} />
-      <Select
-        name="role"
-        value={role}
-        onChange={(event) => setRole(event.target.value as Role)}
-        disabled={rolePending}
-        aria-label={`Role for ${user.email}`}
-      >
-        {ROLE_ORDER.map((option) => (
-          <option key={option} value={option}>
-            {ROLE_LABELS[option]}
-          </option>
-        ))}
-      </Select>
+      <div className="w-44">
+        <FormSelect
+          name="role"
+          value={role}
+          onValueChange={(next) => setRole(next as Role)}
+          options={ROLE_OPTIONS}
+          disabled={rolePending}
+          aria-label={`Role for ${user.email}`}
+        />
+      </div>
       {selfDemotion ? (
         <SelfDemotionConfirm
           userId={user.id}

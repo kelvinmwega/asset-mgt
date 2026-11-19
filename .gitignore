@@ -91,3 +91,6 @@ seed-data/
 *.tsbuildinfo
 next-env.d.ts
 .pnpm-store
+
+# /ship launch records (docs/features/<slug>/ship-args.json) are per-run state, never committed.
+docs/features/*/ship-args.json

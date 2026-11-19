@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lifecycle menu mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Tokens copied from src/app/globals.css (:root and .dark). */
+.light {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --input-fill: transparent;
+  --input-fill-hover: oklch(0.97 0 0);
+  --scrim: oklch(0 0 0 / 0.5);
+  --st-stock: oklch(0.48 0.12 155); --st-stock-bg: oklch(0.95 0.035 155);
+  --shadow: 0 4px 12px oklch(0 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.06);
+}
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --input-fill: oklch(1 0 0 / 0.045);
+  --input-fill-hover: oklch(1 0 0 / 0.075);
+  --scrim: oklch(0 0 0 / 0.6);
+  --st-stock: oklch(0.8 0.14 155); --st-stock-bg: oklch(0.32 0.05 155);
+  --shadow: 0 8px 24px oklch(0 0 0 / 0.45), 0 1px 2px oklch(0 0 0 / 0.3);
+}
+/* One control-height rule for every form control: 36px, 44px on a coarse pointer.
+     .coarse simulates the coarse-pointer result inside a phone illustration. */
+:root {
+  --radius: 0.625rem;
+  --r-sm: calc(var(--radius) - 4px);
+  --r-md: calc(var(--radius) - 2px);
+  --r-lg: var(--radius);
+  --control-h: 36px;
+  --row-h: 32px;
+}
+@media (pointer: coarse) {
+  :root {
+    --control-h: 44px;
+    --row-h: 44px;
+  }
+}
+.coarse {
+  --control-h: 44px;
+  --row-h: 44px;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: Geist, ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  background: oklch(0.5 0 0);
+}
+.mark {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: oklch(0.85 0.17 85);
+  color: oklch(0.2 0 0);
+  font:
+    600 12px/1.4 Geist,
+    sans-serif;
+  padding: 6px 16px;
+  text-align: center;
+}
+.frames {
+  display: grid;
+  gap: 1px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 1100px) {
+  .frames {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.frame {
+  background: var(--background);
+  color: var(--foreground);
+  padding: 28px 24px 40px;
+  min-width: 0;
+}
+.frame > h1 {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  margin: 0 0 20px;
+}
+h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+h3 {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 32px 0 12px;
+}
+.note {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin: 6px 0 0;
+  max-width: 60ch;
+}
+.label,
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.field {
+  min-width: 0;
+}
+.input,
+.trigger {
+  height: var(--control-h);
+  width: 100%;
+  border: 1px solid var(--input);
+  border-radius: var(--r-md);
+  background: var(--input-fill);
+  color: var(--foreground);
+  font: inherit;
+  padding: 0 12px;
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.05);
+}
+.input::placeholder {
+  color: var(--muted-foreground);
+}
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+.trigger .val {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ph {
+  color: var(--muted-foreground);
+}
+svg.i {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--muted-foreground);
+}
+.trigger.hover {
+  background: var(--input-fill-hover);
+}
+.trigger.focus,
+.trigger.open {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
+}
+.trigger.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.trigger.invalid {
+  border-color: var(--destructive);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--destructive) 20%, transparent);
+}
+.err {
+  font-size: 12px;
+  color: var(--destructive);
+  margin: 6px 0 0;
+}
+.anchor {
+  position: relative;
+}
+.panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 10;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 4px;
+  box-shadow: var(--shadow);
+  max-height: 288px;
+  overflow: auto;
+}
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: var(--row-h);
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+  overflow-wrap: anywhere;
+}
+.item.hl {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.item.empty {
+  color: var(--muted-foreground);
+}
+/* Muted text fails AA on the accent fill in light (4.3:1), so secondary text in a highlighted row takes the row colour. */
+.item.hl.empty,
+.item.hl .ref {
+  color: var(--accent-foreground);
+}
+.sep {
+  height: 1px;
+  background: var(--border);
+  margin: 4px -4px;
+}
+.btn {
+  height: var(--control-h);
+  padding: 0 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--input);
+  background: var(--input-fill);
+  color: var(--foreground);
+  font:
+    500 14px Geist,
+    sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn.primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+.btn.ghost {
+  border-color: transparent;
+  background: transparent;
+}
+.link {
+  color: var(--muted-foreground);
+  text-decoration: underline;
+  font-size: 14px;
+  padding: 0 4px;
+  height: var(--control-h);
+  display: inline-flex;
+  align-items: center;
+}
+.ref {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.phone {
+  width: 390px;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  background: var(--background);
+}
+.keys {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 12px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-top: 12px;
+  align-items: start;
+}
+kbd {
+  justify-self: start;
+  font:
+    500 11px "Geist Mono",
+    monospace;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--foreground);
+}
+@media (max-width: 640px) {
+  .frame {
+    padding: 20px 16px 32px;
+  }
+}
+
+  .crumb { font-size: 12px; color: var(--muted-foreground); }
+  .title { display: flex; align-items: center; gap: 10px; margin: 8px 0 2px; }
+  .title .tag { font: 600 20px "Geist Mono", ui-monospace, monospace; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--st-stock-bg); color: var(--st-stock); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .sub { font-size: 12px; color: var(--muted-foreground); }
+  .sect { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); margin: 28px 0 10px; }
+  .lc { display: flex; gap: 8px; align-items: flex-start; }
+  .btn.open { border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent); }
+  .panel.menu { right: auto; min-width: 192px; }
+  .item { white-space: nowrap; }
+  .spacer { height: 112px; } .spacer-phone { height: 150px; }
+</style>
+</head>
+<body>
+<!--
+  Provenance
+  slug: custom-dropdowns
+  spec: docs/features/custom-dropdowns/DESIGN-SPEC.md
+  date: 2026-11-18T22:14:48Z (revised after critique 2026-11-18T22:25:46Z)
+  surface: dropdown controls across the app (the "More" lifecycle menu on the asset page)
+  mode: Operate
+  dials: V3 / M3 / D5, source taste §1.A "redesign - preserve"
+  icons: lucide (lucide-react 1.28.0): chevron-down; paths copied from node_modules, not drawn
+  layers: taste f7493a5 · Impeccable 4.5.2 (engine 0.1.14, product schema 1) · frontend-design@claude-plugins-official 1.1.1
+  tokens: src/app/globals.css (:root, .dark)
+  incumbent strings carried as shipped: option labels, dialog titles and descriptions, EventNoteHint, MOVE_LABELS
+-->
+<div class="mark" role="note">Synthetic content. Design mockup, not a real record.</div>
+<div class="frames">
+<section class="frame dark" aria-label="Dark theme">
+  <h1>Dark theme · asset page, in stock, menu opened from the keyboard</h1>
+  <div class="crumb">Register › LT-00418</div>
+  <h2 class="title"><span class="tag">LT-00418</span><span class="chip"><span class="dot" aria-hidden="true"></span>In stock</span></h2>
+  <div class="sub">Lenovo ThinkPad T14 · Laptops</div>
+  <div class="sect">Lifecycle</div>
+  <div class="lc">
+    <button class="btn primary" type="button">Assign…</button>
+    <div class="anchor">
+      <button class="btn open" type="button" aria-haspopup="menu" aria-expanded="true" aria-controls="d-menu">More<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+      <div class="panel menu" role="menu" id="d-menu" aria-label="More lifecycle actions">
+        <div class="item hl" role="menuitem" tabindex="0">Send to repair…</div>
+        <div class="sep" role="separator"></div>
+        <div class="item" role="menuitem" tabindex="-1">Retire asset…</div>
+      </div>
+    </div>
+  </div>
+  <div class="spacer" aria-hidden="true"></div>
+  <p class="note">Same panel as every select: popover surface, 10px radius, 4px inset, the shared row height, accent highlight. Retire sits last behind a separator because it ends the asset's lifecycle. Choosing an item closes the menu and opens that move's dialog; closing the dialog returns focus to More.</p>
+  <div class="keys">
+    <kbd>Enter</kbd><span>open, focus the first item</span>
+    <kbd>↑ ↓</kbd><span>move between items</span>
+    <kbd>Esc</kbd><span>close, focus back on More (today it stays open)</span>
+    <kbd>Click outside</kbd><span>close</span>
+  </div>
+
+  <h3>Phone, 390 wide, coarse pointer</h3>
+  <div class="phone coarse">
+    <div class="lc">
+      <button class="btn primary" type="button">Assign…</button>
+      <div class="anchor">
+        <button class="btn open" type="button" aria-haspopup="menu" aria-expanded="true" aria-controls="d-pmenu">More<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="panel menu" role="menu" id="d-pmenu" aria-label="More lifecycle actions">
+          <div class="item hl" role="menuitem" tabindex="0">Send to repair…</div>
+          <div class="sep" role="separator"></div>
+          <div class="item" role="menuitem" tabindex="-1">Retire asset…</div>
+        </div>
+      </div>
+    </div>
+    <div class="spacer-phone" aria-hidden="true"></div>
+  </div>
+  <p class="note">On a coarse pointer the buttons and menu rows are 44px, so each move is a full thumb-sized target.</p>
+</section>
+<section class="frame light" aria-label="Light theme">
+  <h1>Light theme · asset page, in stock, menu opened from the keyboard</h1>
+  <div class="crumb">Register › LT-00418</div>
+  <h2 class="title"><span class="tag">LT-00418</span><span class="chip"><span class="dot" aria-hidden="true"></span>In stock</span></h2>
+  <div class="sub">Lenovo ThinkPad T14 · Laptops</div>
+  <div class="sect">Lifecycle</div>
+  <div class="lc">
+    <button class="btn primary" type="button">Assign…</button>
+    <div class="anchor">
+      <button class="btn open" type="button" aria-haspopup="menu" aria-expanded="true" aria-controls="l-menu">More<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+      <div class="panel menu" role="menu" id="l-menu" aria-label="More lifecycle actions">
+        <div class="item hl" role="menuitem" tabindex="0">Send to repair…</div>
+        <div class="sep" role="separator"></div>
+        <div class="item" role="menuitem" tabindex="-1">Retire asset…</div>
+      </div>
+    </div>
+  </div>
+  <div class="spacer" aria-hidden="true"></div>
+  <p class="note">Same panel as every select: popover surface, 10px radius, 4px inset, the shared row height, accent highlight. Retire sits last behind a separator because it ends the asset's lifecycle. Choosing an item closes the menu and opens that move's dialog; closing the dialog returns focus to More.</p>
+  <div class="keys">
+    <kbd>Enter</kbd><span>open, focus the first item</span>
+    <kbd>↑ ↓</kbd><span>move between items</span>
+    <kbd>Esc</kbd><span>close, focus back on More (today it stays open)</span>
+    <kbd>Click outside</kbd><span>close</span>
+  </div>
+
+  <h3>Phone, 390 wide, coarse pointer</h3>
+  <div class="phone coarse">
+    <div class="lc">
+      <button class="btn primary" type="button">Assign…</button>
+      <div class="anchor">
+        <button class="btn open" type="button" aria-haspopup="menu" aria-expanded="true" aria-controls="l-pmenu">More<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="panel menu" role="menu" id="l-pmenu" aria-label="More lifecycle actions">
+          <div class="item hl" role="menuitem" tabindex="0">Send to repair…</div>
+          <div class="sep" role="separator"></div>
+          <div class="item" role="menuitem" tabindex="-1">Retire asset…</div>
+        </div>
+      </div>
+    </div>
+    <div class="spacer-phone" aria-hidden="true"></div>
+  </div>
+  <p class="note">On a coarse pointer the buttons and menu rows are 44px, so each move is a full thumb-sized target.</p>
+</section>
+</div>
+</body>
+</html>

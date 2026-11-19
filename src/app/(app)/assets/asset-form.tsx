@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { FormSelect } from "@/components/ui/form-select";
 import { CONDITION_LABELS, CONDITION_ORDER } from "@/lib/labels";
 import { createAsset, updateAsset } from "./actions";
 
@@ -20,7 +20,15 @@ const INITIAL_STATUS_OPTIONS = [
   { value: "IN_STOCK", label: "In stock (already on the shelf — needs a tag)" },
 ] as const;
 
+const CONDITION_OPTIONS = CONDITION_ORDER.map((condition) => ({
+  value: condition,
+  label: CONDITION_LABELS[condition],
+}));
+
 export type AssetFormOption = { id: string; name: string };
+
+const toOptions = (rows: AssetFormOption[]) =>
+  rows.map((row) => ({ value: row.id, label: row.name }));
 
 /**
  * Every value is a string: this crosses the server/client boundary, and
@@ -71,18 +79,13 @@ export function AssetForm({
       {isEdit ? null : (
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={fieldId("status")}>Starting status</Label>
-          <Select
+          <FormSelect
             id={fieldId("status")}
             name="status"
             defaultValue="ON_ORDER"
+            options={INITIAL_STATUS_OPTIONS}
             disabled={pending}
-          >
-            {INITIAL_STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
+          />
         </div>
       )}
 
@@ -102,19 +105,15 @@ export function AssetForm({
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={fieldId("categoryId")}>Category</Label>
-        <Select
+        <FormSelect
           id={fieldId("categoryId")}
           name="categoryId"
           defaultValue={asset?.categoryId}
+          options={toOptions(categories)}
           required
+          placeholder="Choose a category"
           disabled={pending}
-        >
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </Select>
+        />
       </div>
 
       <div className="flex gap-3">
@@ -264,35 +263,25 @@ export function AssetForm({
       <div className="flex gap-3">
         <div className="flex flex-1 flex-col gap-1.5">
           <Label htmlFor={fieldId("condition")}>Condition</Label>
-          <Select
+          <FormSelect
             id={fieldId("condition")}
             name="condition"
             defaultValue={asset?.condition ?? ""}
+            options={CONDITION_OPTIONS}
+            emptyLabel="Not recorded"
             disabled={pending}
-          >
-            <option value="">Not recorded</option>
-            {CONDITION_ORDER.map((condition) => (
-              <option key={condition} value={condition}>
-                {CONDITION_LABELS[condition]}
-              </option>
-            ))}
-          </Select>
+          />
         </div>
         <div className="flex flex-1 flex-col gap-1.5">
           <Label htmlFor={fieldId("siteId")}>Site</Label>
-          <Select
+          <FormSelect
             id={fieldId("siteId")}
             name="siteId"
             defaultValue={asset?.siteId ?? ""}
+            options={toOptions(sites)}
+            emptyLabel="Not recorded"
             disabled={pending}
-          >
-            <option value="">Unassigned</option>
-            {sites.map((site) => (
-              <option key={site.id} value={site.id}>
-                {site.name}
-              </option>
-            ))}
-          </Select>
+          />
         </div>
       </div>
 
