@@ -162,4 +162,4 @@ Overspend: none
 - needsRatification: The DESIGN-SYSTEM.md state table now points to a new primitive table below it, and the rejected-alternatives sentence now reads 'starting with a listbox for every dropdown' instead of naming select.tsx — Both old claims went stale when the file was deleted (process/doc-drift). The new table records each primitive and what it is built on, which is what the task asks for.
 - needsRatification: Left the docblock in src/components/ui/theme-toggle.tsx unchanged. Its reason for not using a dropdown menu is 'a Radix dropdown dependency for three options', and that dependency now exists — Out of this task's scope, and the button decision still holds on its other stated ground (the approved design is an icon button). Flagged for the reviewer as possible drift for a separate fix.
 
-No post-wave round ran
+Post-wave round 1: ac0ce35 — task 1 open findings (8d9766e, f9ef55c, ac0ce35): G16 failing in a real engine (dialog fixed to the layout viewport), unreviewed 76cc6ca, stale always-mounted comment, spec inline-list cap text — reviewer REQUEST CHANGES
