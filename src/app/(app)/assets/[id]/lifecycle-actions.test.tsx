@@ -125,9 +125,24 @@ function posted(
   return formData;
 }
 
-/** Every option's accessible name in the open list. */
+/**
+ * Every option's accessible name in the open list, in order. textContent would
+ * keep text a screen reader never hears (G7, inline-text-boundaries), and
+ * dom-accessibility-api is not a direct dependency, so the names are taken
+ * from the ones the role query computes and hands to a name matcher. The
+ * matcher also sees options the query then drops as inaccessible, so each name
+ * is read back by the element the query returns.
+ */
 function optionNames() {
-  return screen.getAllByRole("option").map((option) => option.textContent);
+  const names = new Map<Element, string>();
+  return screen
+    .getAllByRole("option", {
+      name: (name, element) => {
+        if (element) names.set(element, name);
+        return true;
+      },
+    })
+    .map((option) => names.get(option));
 }
 
 describe("one primary action per status, the rest behind More", () => {
