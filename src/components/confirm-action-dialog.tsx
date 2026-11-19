@@ -198,7 +198,7 @@ function ConfirmActionDialogRun({
           {state ? (
             <p
               role="status"
-              /* Stryker disable StringLiteral: Tailwind class names. This repo asserts on roles and text, never on class strings, so a test able to kill these would go red on any design-token rename while catching no behaviour change. What matters here — the result is announced, in place, via role="status" — is guard 4 and is tested. */
+              /* Stryker disable StringLiteral: Tailwind colour class names. No test asserts on this paragraph's classes, and one able to kill these would go red on any design-token rename while catching no behaviour change. What matters here — the result is announced, in place, via role="status" — is guard 4 and is tested. */
               className={
                 state.ok
                   ? "text-muted-foreground text-sm"
