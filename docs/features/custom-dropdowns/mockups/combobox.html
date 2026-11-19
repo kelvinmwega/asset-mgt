@@ -329,7 +329,6 @@ kbd {
   .q { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--foreground); font: inherit; padding: 8px 0; }
   .q::placeholder { color: var(--muted-foreground); }
   .list { padding: 4px; max-height: 288px; overflow: auto; }
-  /* Also bounded by 40% of visualViewport.height in the build: dvh does not shrink with the soft keyboard. */
   .list.inline { max-height: min(264px, 40dvh); border: 1px solid var(--border); border-radius: var(--r-lg); margin-top: 6px; }
   .item .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .item .tick { color: currentColor; }
