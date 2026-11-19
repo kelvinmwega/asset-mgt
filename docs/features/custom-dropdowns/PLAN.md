@@ -167,3 +167,5 @@ Post-wave round 1: ac0ce35 — task 1 open findings (8d9766e, f9ef55c, ac0ce35):
 Post-wave round 2: 5d99045 — round-1 review blockers (05b54de, f66cdb2, 5d99045): dialog geometry transitioning under reduced motion (G14), hand-edited mockup reverted, contradicted Stryker comment narrowed — reviewer REQUEST CHANGES
 
 Post-wave round 3: cd46d03 — round-2 review blocker (cd46d03): G14 test docblock pointed at the delivery record for its browser evidence — reviewer REQUEST CHANGES
+
+Post-wave round 4: 6f97e3f — round-3 review blocker (6f97e3f): G14 test docblock cited a branch-only SHA, lost on squash merge; readings now inline — reviewer APPROVE
