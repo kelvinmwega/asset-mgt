@@ -163,3 +163,5 @@ Overspend: none
 - needsRatification: Left the docblock in src/components/ui/theme-toggle.tsx unchanged. Its reason for not using a dropdown menu is 'a Radix dropdown dependency for three options', and that dependency now exists — Out of this task's scope, and the button decision still holds on its other stated ground (the approved design is an icon button). Flagged for the reviewer as possible drift for a separate fix.
 
 Post-wave round 1: ac0ce35 — task 1 open findings (8d9766e, f9ef55c, ac0ce35): G16 failing in a real engine (dialog fixed to the layout viewport), unreviewed 76cc6ca, stale always-mounted comment, spec inline-list cap text — reviewer REQUEST CHANGES
+
+Post-wave round 2: 5d99045 — round-1 review blockers (05b54de, f66cdb2, 5d99045): dialog geometry transitioning under reduced motion (G14), hand-edited mockup reverted, contradicted Stryker comment narrowed — reviewer REQUEST CHANGES
